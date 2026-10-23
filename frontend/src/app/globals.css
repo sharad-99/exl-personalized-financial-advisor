@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* Design tokens: light, restrained fintech palette (navy + teal accents). */
+@theme inline {
+  --color-canvas: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-ink: #0f1b2d;
+  --color-ink-2: #44506a;
+  --color-ink-3: #6b7489;
+  --color-line: #e3e7ee;
+  --color-navy: #0b2545;
+  --color-navy-2: #13315c;
+  --color-teal: #0d9488;
+  --color-teal-ink: #0f766e;
+  --color-teal-soft: #e6f6f4;
+  --color-expense: #eb6834;
+  --color-good: #15803d;
+  --color-warn: #b45309;
+  --color-bad: #b91c1c;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

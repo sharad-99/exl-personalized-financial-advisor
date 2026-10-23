@@ -1,0 +1,28 @@
+# Supabase CLI configuration (local development with `supabase start`).
+# Migrations live in supabase/migrations and are applied in filename order.
+project_id = "exl-personalized-financial-advisor"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+max_rows = 200
+
+[db]
+port = 54322
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/login"]
+jwt_expiry = 3600
+enable_signup = false
+
+[auth.email]
+enable_signup = false
+enable_confirmations = true

@@ -1,0 +1,14 @@
+-- Supabase seed hook (runs after migrations on `supabase db reset`).
+--
+-- Reference data (rules, product types) is already inserted by
+-- migrations/20261024000300_reference_data.sql.
+--
+-- The ~23,000 synthetic transactions are generated reproducibly by Python
+-- rather than committed as SQL, so there is a single source of truth:
+--
+--   cd backend
+--   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+--     .venv/bin/python -m app.synthetic_data.seed --seed 42 --reset
+--
+-- All seeded data is SYNTHETIC. Never load real customer data into a demo project.
+select 1;
