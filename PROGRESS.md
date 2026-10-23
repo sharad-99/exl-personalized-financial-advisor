@@ -2,6 +2,8 @@
 
 Last updated: 2026-10-24. Resume from "Next actions" below.
 
+> Current verified status (tests re-run, deployment progress, gaps): see [PROJECT_STATUS.md](PROJECT_STATUS.md).
+
 ## Stage status
 
 | Stage | Status | Evidence |
