@@ -1,14 +1,14 @@
 # Deployment
 
-> **Status: nothing has been deployed.** No Supabase project, backend service or Vercel project exists for this
-> repository yet, and no public URLs exist. This guide describes the intended deployment. Every step requires the
-> project owner's own accounts and explicit go-ahead. Placeholders such as `<project-ref>`, `<backend-host>` and
-> `<vercel-domain>` must be replaced with real values.
+> **Status (2026-10-24):** the Supabase project `exl-advisor` (Mumbai) is migrated, seeded with synthetic data,
+> has public sign-ups disabled and two linked demo users. Hosting target is **Vercel for both the backend and the
+> frontend** (two Vercel projects from this repository; free Hobby plan). Render remains a documented alternative
+> (section 2b). Live URLs are recorded in `PROJECT_STATUS.md` once they exist.
 
 Target topology:
 
 ```
-Browser --> Vercel (Next.js frontend + BFF route handlers) --> Python host (FastAPI) --> Supabase PostgreSQL
+Browser --> Vercel project 1 (Next.js + BFF) --> Vercel project 2 (FastAPI, Python functions) --> Supabase PostgreSQL
                       |                                              ^
                       +--> Supabase Auth (sign-in, sessions) --------+ (JWKS for token verification)
 ```
@@ -85,9 +85,40 @@ DATABASE_URL='postgresql://postgres:<db-password>@db.<project-ref>.supabase.co:5
 The seeder refuses to run with `ENVIRONMENT=production` unless `--allow-production` is given. `--reset` removes
 only rows that belong to `is_synthetic = true` profiles. Add `--as-of YYYY-MM-DD` to pin the dataset date.
 
-## 2. Backend (FastAPI) on a Python host
+## 2. Backend (FastAPI) on Vercel (chosen)
 
-Any host that runs a Python ASGI app works. The repository includes a Render Blueprint, `render.yaml`:
+Vercel's Python runtime detects FastAPI and loads the `app` object from `backend/app/main.py` (one of its
+standard entrypoint locations), running it as a Vercel Function. Python 3.14 is pinned by `backend/.python-version`
+and `backend/pyproject.toml` / `requirements.txt` hold the pinned dependencies (≈208 MB installed; Vercel's Python
+bundle limit is 500 MB). `backend/vercel.json` excludes tests and local data from the bundle.
+
+| Vercel project setting | Value |
+|---|---|
+| Project name | e.g. `exl-advisor-api` |
+| Root directory | `backend` |
+| Framework preset | FastAPI (auto-detected) |
+| Build / install commands | defaults |
+
+Serverless-specific behaviour (automatic when Vercel sets `VERCEL=1`, or with `SERVERLESS=true`):
+
+- **No connection pool:** each request opens one database connection and closes it (`NullPool`), so many
+  short-lived instances do not exhaust Supabase's connection limit. Use the Supabase **Session pooler** URL
+  (port 5432). The **Transaction pooler** (port 6543) also works: the backend then disables prepared statements
+  and the per-connection `statement_timeout` option, which that pooler cannot carry.
+- **Rate limiting is per instance:** the in-memory limiter resets with each new instance, so it is weaker than on a
+  single long-running server (documented limitation; a shared store such as Redis would fix it).
+- **Cold starts:** the first request after idle time imports pandas/NumPy and can take several seconds.
+
+Verified locally before deployment (clean install from `requirements.txt`, `VERCEL=1`, `ENVIRONMENT=production`,
+Supabase database): `/health` ok, `/docs` and `/openapi.json` 404, local demo login 404, no/forged token 401,
+security headers including HSTS, no idle connections left after requests, frontend journey and concurrent
+refreshes working.
+
+## 2b. Backend on Render (alternative)
+
+Any host that runs a Python ASGI app works. The repository includes a Render Blueprint, `render.yaml`
+(Blueprints may require a paid workspace; a free web service can be created manually with the same values —
+make sure **Root Directory** is `backend`, otherwise the build cannot find `requirements.txt`):
 
 | Setting | Value |
 |---|---|
@@ -106,8 +137,8 @@ Run a **single instance**. The rate limiter is in-memory (`security.md`, section
 
 | Variable | Value | Secret? |
 |---|---|---|
-| `ENVIRONMENT` | `production` (turns off `/docs` and `/redoc`, adds HSTS, enforces production configuration checks) | no |
-| `DATABASE_URL` | `exl_api` pooled connection string | **yes** |
+| `ENVIRONMENT` | `production` (turns off `/docs`, `/redoc` and `/openapi.json`, adds HSTS, enforces production configuration checks) | no |
+| `DATABASE_URL` | Supabase Session pooler URI (port 5432), password URL-encoded. Initially the `postgres` owner; switching to the least-privilege `exl_api` role (section 1.3) is a recommended follow-up | **yes** |
 | `AUTH_MODE` | `supabase` (required in production) | no |
 | `SUPABASE_URL` | `https://<project-ref>.supabase.co` | no |
 | `SUPABASE_JWT_SECRET` | Only for legacy HS256 projects; otherwise leave unset | **yes** |

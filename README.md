@@ -142,9 +142,9 @@ Real `.env` files are git-ignored. Only `.env.example` placeholders are committe
 
 Verified locally on macOS (Python 3.14, Node 24):
 
-- Backend: **231 tests pass**, including 12 PostgreSQL tests (migrations, idempotent re-runs,
+- Backend: **236 tests pass**, including 12 PostgreSQL tests (migrations, idempotent re-runs,
   constraints, RLS isolation, append-only audit, full API flow) run against real Postgres via
-  PGlite. Without `TEST_DATABASE_URL`: 219 passed, 12 skipped. `ruff` lint and format clean.
+  PGlite. Without `TEST_DATABASE_URL`: 224 passed, 12 skipped. `ruff` lint and format clean.
 - Frontend: TypeScript, ESLint and `next build` clean.
 - End-to-end: 4 Playwright tests pass against both the dev server and the production build.
 - Manual browser check of every screen as customer and advisor, including mobile width and a

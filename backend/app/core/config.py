@@ -7,6 +7,7 @@ running with weak security.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from typing import Annotated, Literal
 
@@ -25,6 +26,7 @@ class Settings(BaseSettings):
     # Database: SQLite file for zero-dependency local demos; PostgreSQL (Supabase) otherwise.
     database_url: str = "sqlite:///./data/local.db"
     database_echo: bool = False
+    serverless: bool = False  # disable connection pooling (one connection per request)
 
     # Authentication
     auth_mode: Literal["local", "supabase"] = "local"
@@ -50,6 +52,11 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip().rstrip("/") for origin in value.split(",") if origin.strip()]
         return value
+
+    @property
+    def is_serverless(self) -> bool:
+        """True on Vercel (which sets VERCEL=1) or when SERVERLESS=true is set explicitly."""
+        return self.serverless or os.environ.get("VERCEL") == "1"
 
     @property
     def is_sqlite(self) -> bool:

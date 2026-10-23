@@ -146,3 +146,17 @@ def test_rate_limits_are_per_user_not_shared(client: TestClient, customer_a, cus
     assert client.post(f"/api/v1/customers/{a_id}/recommendations/refresh", headers=a_headers).status_code == 429
     # Same client IP (as behind the Next.js proxy), different user: not affected.
     assert client.post(f"/api/v1/customers/{b_id}/recommendations/refresh", headers=b_headers).status_code == 200
+
+
+def test_api_docs_and_schema_hidden_in_production() -> None:
+    settings = Settings(
+        _env_file=None,
+        environment="production",
+        auth_mode="supabase",  # type: ignore[call-arg]
+        supabase_url="https://abc.supabase.co",
+        database_url="postgresql://u:p@db.invalid:5432/x",
+        cors_allowed_origins="https://app.example.com",
+    )
+    client = TestClient(create_app(settings))
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert client.get(path).status_code == 404, path

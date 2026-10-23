@@ -39,6 +39,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=settings.app_version,
         description=DESCRIPTION,
         docs_url="/docs" if settings.environment != "production" else None,
+        openapi_url="/openapi.json" if settings.environment != "production" else None,
         redoc_url="/redoc" if settings.environment != "production" else None,
     )
     install_error_handlers(app)

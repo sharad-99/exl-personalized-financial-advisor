@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "exl-financial-advisor-api"
 version = "0.1.0"
 description = "FastAPI backend for the EXL Personalized Financial Advisor (synthetic data only)."
-readme = "../README.md"
 requires-python = ">=3.12"
 # Direct runtime dependencies are pinned exactly; the full transitive lock is
 # requirements.txt (generated with `pip freeze` from a clean venv).

@@ -5,7 +5,32 @@ Audit date: 2026-10-24 (local time, IST). Repository: https://github.com/sharad-
 `111d9c0`). Everything was re-run when written; nothing is
 reported from memory. `PROGRESS.md` holds the original stage log and design decisions.
 
-## 0a. Latest update — Supabase sign-in verified end to end (2026-10-24)
+## 0b. Latest update — backend prepared for Vercel (2026-10-24)
+
+Render's Blueprint flow required a paid plan and the first free deploy failed because Root Directory was empty
+(`Could not open requirements file`). Decision: host the FastAPI backend on Vercel (free Hobby, Python 3.14
+supported, FastAPI auto-detected in `app/main.py`).
+
+| Change | Files |
+|---|---|
+| Serverless mode (auto when `VERCEL=1`): `NullPool`, one DB connection per request | `backend/app/db/connection.py`, `backend/app/core/config.py` |
+| Supabase transaction pooler (port 6543) supported: prepared statements and startup options disabled there | `backend/app/db/connection.py` |
+| `/openapi.json` hidden in production (was still public; `/docs` already hidden) | `backend/app/main.py` |
+| Bundle excludes tests/local data; packaging no longer references a README outside `backend/` | `backend/vercel.json`, `backend/pyproject.toml` |
+| Tests: pool modes, pooler connect args, `VERCEL` detection, docs/schema hidden in production | `backend/tests/unit/test_connection.py`, `backend/tests/security/test_hardening.py` |
+| Docs: Vercel backend section; Render kept as alternative | `docs/deployment.md` |
+
+Verification:
+
+| Check | Result |
+|---|---|
+| Clean venv from `requirements.txt` only | installs; 208 MB (Vercel limit 500 MB); no test tools included |
+| That build with `VERCEL=1 ENVIRONMENT=production AUTH_MODE=supabase` on the Supabase DB | `/health` ok; `/docs` 404; local demo login 404; no token / forged token 401; HSTS + security headers; 8 sequential requests 200; 0 idle connections left |
+| Frontend (Supabase mode) against that backend, signed in as customer01 | money coach loads 5 recommendations with evidence; two concurrent refreshes both 200; other customer's analytics and feedback 404 |
+| `TEST_DATABASE_URL=<throwaway PGlite> pytest -q` | **236 passed**, 0 failed |
+| `ruff check` / `ruff format --check` (app, tests, scripts) | clean |
+
+## 0a. Earlier update — Supabase sign-in verified end to end (2026-10-24)
 
 | Step | Result |
 |---|---|
@@ -173,7 +198,7 @@ Failed tests: **none**.
 
 ## 6. Recommended next step
 
-Deploy the backend to Render (Blueprint from `render.yaml`) with `ENVIRONMENT=production`, `AUTH_MODE=supabase`,
+Deploy the backend to **Vercel** (project root `backend`; see `docs/deployment.md` section 2) with `ENVIRONMENT=production`, `AUTH_MODE=supabase`,
 `SUPABASE_URL`, `DATABASE_URL` (Session pooler) and `CORS_ALLOWED_ORIGINS`, then the frontend to Vercel (root
 `frontend`, `AUTH_MODE=supabase`, `API_BASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`),
 add the Vercel URL to Supabase Auth URL configuration, and run a production smoke test.

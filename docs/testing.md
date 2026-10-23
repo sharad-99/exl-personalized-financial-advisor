@@ -73,8 +73,8 @@ These results were recorded when this documentation was written:
 
 | Check | Result |
 |---|---|
-| Backend tests with `TEST_DATABASE_URL` set (PGlite) | **231 passed**, including the 12 PostgreSQL tests |
-| Backend tests without `TEST_DATABASE_URL` | **219 passed, 12 skipped** |
+| Backend tests with `TEST_DATABASE_URL` set (PGlite) | **236 passed**, including the 12 PostgreSQL tests |
+| Backend tests without `TEST_DATABASE_URL` | **224 passed, 12 skipped** |
 | Frontend `typecheck`, `lint`, `build` | clean |
 | Playwright e2e | **4 passed** |
 
@@ -101,7 +101,7 @@ Counts come from `pytest --collect-only`. Parametrised tests are counted once pe
 | `integration/test_postgres.py` | 8 | 12 | Re-runnable migrations, CHECK/FK/UNIQUE constraints (direction vs type, transfer group, category, overflow, duplicate import, masked number, negative saved amount, no investment products), append-only audit, RLS isolation, exact NUMERIC, API on PostgreSQL |
 | `security/test_authorization.py` | 8 | 23 | 401 on all 16 protected routes, invalid tokens, 403 without a profile, cross-customer reads and writes, foreign goal IDs, foreign feedback, advisor read-only |
 | `security/test_hardening.py` | 12 | 12 | No secrets in responses, identical login errors, login and refresh rate limits, per-user rate-limit buckets, local login disabled in Supabase mode, injection, oversized body, no input echo, CORS, headers, audit hygiene |
-| **Total** | **135** | **231** | 162 unit, 34 integration (12 of them PostgreSQL), 35 security |
+| **Total** | **140** | **236** | 166 unit, 34 integration (12 of them PostgreSQL), 36 security |
 
 The e2e spec (`frontend/e2e/customer-journey.spec.ts`) contains 4 tests:
 1. Unauthenticated visitors are redirected to login.
