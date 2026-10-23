@@ -1,8 +1,48 @@
 # Project status — EXL Personalized Financial Advisor
 
 Audit date: 2026-10-24 (local time, IST). Repository: https://github.com/sharad-99/exl-personalized-financial-advisor
-(public), branch `main`, commits `58618ca` and `111d9c0`. Everything below was re-run for this audit; nothing is
+(public), branch `main`. Section 0 is the latest update; sections 1–6 are the earlier full audit (commits `58618ca`,
+`111d9c0`). Everything was re-run when written; nothing is
 reported from memory. `PROGRESS.md` holds the original stage log and design decisions.
+
+## 0. Latest update — database & synthetic-data milestone (2026-10-24)
+
+The milestone's core (12-table normalized schema with FKs, CHECK/UNIQUE constraints, indexes, NUMERIC(14,2) money
+and RLS; deterministic 60-persona generator with 13 months + partial month; seeder; validator; docs) already
+existed and was verified in the audit below. This update re-checked every requirement and closed the gaps found:
+
+| Change | Files |
+|---|---|
+| Validator now runs the production transaction classifier: category/type consistency, duplicate detector must find exactly the injected duplicates, no unmatched transfers or orphan reversals, ≤2% uncategorised after rules; classifier stats added | `backend/app/synthetic_data/validation.py` |
+| Real incomplete-data scenario: 4 `stale_profile` customers now have no declared income **and** no income credits (salary paid elsewhere) — previously `missing_income` never fired | `backend/app/synthetic_data/generator.py` |
+| Bug fix: when no income is observed, average income and net cash flow are now `null` (unknown) instead of `0.00` | `backend/app/services/financial_analytics.py` |
+| Bug fix: on local SQLite, money CHECK constraints compared decimal *text* with numbers and never fired; they now cast (`CAST(amount AS NUMERIC) > 0`); added direction and saved-amount checks | `backend/app/models/tables.py` |
+| New tests: golden record counts + SHA-256 fingerprint, scenario coverage, validator inconsistency detection, seeding, SQLite constraints (19 cases); 6 more PostgreSQL constraint cases | `backend/tests/unit/test_synthetic_data_quality.py`, `backend/tests/integration/test_postgres.py`, `backend/tests/unit/test_financial_analytics.py` |
+| Supabase user-linking script (dry run by default) | `scripts/link_supabase_users.py` |
+| `scripts/` now linted (fixed an unused import) in Makefile, CI and quality script | `Makefile`, `.github/workflows/tests.yml`, `scripts/run_quality_checks.py` |
+| Docs: scenario table, determinism/golden values, classification checks, actual stats, Supabase load commands, test map, SQLite constraint note, test counts | `docs/synthetic-data.md`, `docs/database-design.md`, `docs/testing.md`, `README.md`, `docs/product-requirements.md` |
+
+Commands run for this update and results:
+
+| Command | Result |
+|---|---|
+| `backend/.venv/bin/python scripts/validate_synthetic_data.py --seed 42 --as-of 2026-10-24` | PASS, 0 errors, 4 expected warnings; 22,872 transactions; 1,249 income / 20,118 expense / 15 refund / 1,490 excluded; 20 duplicates detected = 20 injected; 0 uncategorised after rules |
+| `cd backend && TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54329/postgres .venv/bin/python -m pytest -q` (throwaway PGlite) | **228 passed**, 0 failed (includes 12 PostgreSQL tests) |
+| `python3 scripts/run_quality_checks.py` (no `TEST_DATABASE_URL`) | all 7 gates PASS: ruff lint, ruff format, data validation, backend tests (**216 passed, 12 skipped**), frontend typecheck, lint, build |
+| `E2E_PASSWORD=<LOCAL_DEMO_PASSWORD> npx playwright test` (local SQLite re-seeded) | **4 passed** |
+| Failed tests | **none** |
+
+Supabase (project `exl-advisor`, Mumbai):
+
+| Step | Result |
+|---|---|
+| `python -m app.db.migrate` | nothing to apply (up to date) |
+| `python -m app.synthetic_data.seed --seed 42 --as-of 2026-10-24 --reset` | 61 profiles, 119 accounts, 22,872 transactions, 85 goals, 146 obligations, 40 data-quality events |
+| Public sign-ups | **disabled**; `POST /auth/v1/signup` returns `422 signup_disabled` |
+| Anonymous REST API (`/rest/v1/<table>` with the publishable key) | `transactions`, `profiles`, `accounts`, `schema_migrations`, `recommendation_rules` all denied (`42501`) |
+| Auth users / profile links | **not yet created** — `scripts/link_supabase_users.py` reports no users. Blocked on the account owner choosing passwords |
+
+The recommendation engine was not modified in this update.
 
 ## 1. Project structure (146 tracked files)
 
@@ -71,7 +111,7 @@ Live Supabase project `exl-advisor` (Mumbai) — checks run from this machine:
 | 7 Authentication & security | **Partially verified** | Local auth mode verified end-to-end. Supabase auth mode: HS256 token verification unit-tested only; JWKS (asymmetric) verification and browser sign-in via Supabase **not yet exercised** |
 | 8 Tests, quality, CI | Complete | Local results above; GitHub Actions green |
 | 9 Local end-to-end | Complete | Playwright 4/4 plus manual walkthrough |
-| 10 Deployment | **In progress** | GitHub repo created and pushed. Supabase database migrated, seeded and RLS-checked. **Not done:** Supabase Auth users + profile linking, backend hosting (Render), frontend hosting (Vercel), production smoke test |
+| 10 Deployment | **In progress** | GitHub repo created and pushed. Supabase database migrated, seeded and RLS-checked; public sign-ups disabled; anonymous REST access verified denied. **Not done:** Supabase Auth users + profile linking, backend hosting (Render), frontend hosting (Vercel), production smoke test |
 
 ## 4. Secrets and data audit
 
@@ -90,7 +130,7 @@ repository or the Supabase project.
 ## 5. Missing functionality, known gaps and blockers
 
 Blockers (need the account owner):
-1. Supabase Auth users not yet created; therefore not linked to profiles; sign-up not yet disabled.
+1. Supabase Auth users not yet created, therefore not linked to profiles (sign-ups are now disabled).
 2. Backend not deployed (needs a Render or similar account and secret entry by the owner).
 3. Frontend not deployed (needs a Vercel account; depends on the backend URL).
 
@@ -105,8 +145,7 @@ Known limitations (documented in `docs/security.md`; not failures):
 9. Request-body limit relies on `Content-Length`; a 504 timeout does not cancel the work already running.
 10. Emergency-fund rule and an emergency-fund goal can both suggest an amount for the same need.
 11. The `balance_mismatch` data-quality warning does not lower the confidence level.
-12. The synthetic "missing declared income" personas still receive salary credits, so the `missing_income` path is
-    covered by unit tests but not exercised by the seeded data.
+12. ~~Missing-income personas still received salary credits~~ — fixed in section 0.
 13. No frontend unit/component tests; UI is covered by typecheck, build, Playwright and manual checks.
 14. `supabase/seed.sql` is a pointer to the Python seeder rather than SQL inserts.
 15. Commit author email is the machine-local default (`sharad@Sharads-MacBook-Air.local`).
@@ -116,6 +155,7 @@ Failed tests: **none**.
 ## 6. Recommended next step
 
 Finish the Supabase Auth setup, because it unblocks the only unverified security path and both hosting steps:
-create `advisor@demo.exl.test` and `customer01@demo.exl.test` in Supabase Auth (auto-confirm), disable public
-sign-ups, then link the users to their synthetic profiles and verify a Supabase-issued token against the backend
-locally (`AUTH_MODE=supabase`) **before** deploying to Render and Vercel.
+the account owner creates `advisor@demo.exl.test` and `customer01@demo.exl.test` in Supabase Auth (auto-confirm);
+then run `scripts/link_supabase_users.py --apply` and verify a Supabase-issued token against the backend locally
+(`AUTH_MODE=supabase`) **before** deploying to Render and Vercel. After that, the next milestone is hosting the
+backend (Render) and frontend (Vercel).

@@ -49,6 +49,10 @@ and so on. If `--customers` exceeds 60, the personas repeat in the same order.
   used only for ratios and probabilities, never as stored amounts.
 - `tests/unit/test_synthetic_data.py::test_dataset_is_reproducible_and_seed_sensitive` checks both properties:
   the same inputs reproduce the output, and a different seed changes it.
+- `tests/unit/test_synthetic_data_quality.py::test_exact_record_counts_and_fingerprint` pins the exact output for
+  seed 42 / as_of 2026-10-24: 61 profiles, 60 financial profiles, 119 accounts, 22,872 transactions, 85 goals,
+  146 obligations, and a SHA-256 fingerprint of all rows. An intentional generator change must update these
+  golden values (and this document); an unintentional one fails CI.
 
 ## 3. Transaction patterns (per customer, per month)
 
@@ -93,15 +97,15 @@ and so on. If `--customers` exceeds 60, the personas repeat in the same order.
 | Refund | `index % 4 == 0` | Credit `refund` of a random savings-account purchase, 5 days later | 15 |
 | Reversal | `index % 5 == 0` | Same-day credit `reversal` linked by `reverses_transaction_id`. Both legs are neutralised | 12 |
 | Duplicate import | `index % 6 == 0` | Two purchases copied with external_ref `<ref>-DUP` and a new ID, but the same account, date, amount and description. Excluded as `probable_duplicate` | 20 rows |
-| Uncategorised | any customer, about 4% of grocery, transport and healthcare purchases | Stored as `uncategorized`. Keyword rules recover most of them | 358 rows |
+| Uncategorised | any customer, about 4% of grocery, transport and healthcare purchases | Stored as `uncategorized`. Keyword rules recover all of them for seed 42 | 345 rows |
 | Stale data | all `stale_profile` customers | Last transaction 50–130 days before `as_of`, balance as of that date, profile older than 365 days, so confidence is **low** | 7 customers |
-| Missing income | `stale_profile` and `index % 2 == 0` | `declared_monthly_income = null` | 4 |
+| Missing income | `stale_profile` and `index % 2 == 0` | `declared_monthly_income = null` **and** no income credits (salary is paid into another bank). Analytics report income as unknown (`null`), never zero, and raise `missing_income` | 4 |
 | Missing balance | `stale_profile` and `index % 3 == 0` | Savings `current_balance` and `balance_as_of` are null, so the emergency fund is `unknown` | 3 accounts |
 | Short history | all `new_to_bank` customers | Fewer than 3 complete months, so confidence is **low** | 5 customers |
 
-The missing-income customers still receive salary credits, so the `missing_income` data-quality issue (which
-requires both no declared income **and** no income transactions) does not fire for them. Their low confidence
-comes from stale data instead.
+The missing-income customers have neither declared income nor any income credits, so the `missing_income`
+data-quality issue fires for all 4, their monthly-average income and net cash flow are `null` (unknown), and the
+savings rate status is `no_income`.
 
 ## 5. Privacy-safe identifiers
 
@@ -130,6 +134,11 @@ comes from stale data instead.
 - An account balance that does not reconcile (opening + signed non-duplicate transactions ≠ current). A liquid
   account with a negative balance.
 - A customer with no transactions, or with a history span under 11 months (except `new_to_bank` and `stale_profile`).
+- **Classification consistency** (runs the production classifier, `spending_categorization.classify_transactions`,
+  over every customer): a category that contradicts its transaction type (e.g. a purchase categorised as salary,
+  a transfer not categorised `transfer`); the duplicate detector not finding exactly the injected duplicates
+  (misses or false positives); any unmatched transfer leg or orphan reversal; more than 2% of expenses still
+  uncategorised after keyword rules.
 - A goal or obligation with an unknown customer or an invalid amount. Saved > target on a goal that is not
   achieved. An obligation whose end date is before its due date.
 
@@ -141,7 +150,9 @@ comes from stale data instead.
 - Accounts without a reported balance
 
 For seed 42 and as_of 2026-10-24 there are 0 errors and 4 warnings: 20 duplicate imports, 5 short histories,
-4 without declared income, and 3 without a balance.
+4 without declared income, and 3 without a balance. `stats` also reports the classifier outcome: 1,249 income,
+20,118 expense, 15 refund and 1,490 excluded transactions; 1,446 internal-transfer legs, 20 duplicates detected
+(= 20 injected), 12 reversal pairs, 0 uncategorised after rules.
 
 ## 7. Commands
 
@@ -171,3 +182,23 @@ backend/.venv/bin/python scripts/validate_synthetic_data.py --seed 42 [--as-of Y
 ```
 The script prints the statistics, every warning and error, and `RESULT: PASS` or `FAIL`. It **exits non-zero
 when there are errors**. CI runs it on every push. `make data` and `make validate` wrap both scripts.
+
+Load into Supabase (owner connection string in the git-ignored `backend/.env.supabase`):
+```bash
+cd backend
+set -a; . ./.env.supabase; set +a
+.venv/bin/python -m app.db.migrate
+.venv/bin/python -m app.synthetic_data.seed --seed 42 --as-of 2026-10-24 --reset
+.venv/bin/python ../scripts/link_supabase_users.py --apply   # after creating demo users in Supabase Auth
+```
+`link_supabase_users.py` sets `profiles.auth_user_id` for synthetic profiles whose email matches a Supabase Auth
+user (dry run without `--apply`). `--reset` keeps existing links.
+
+## 8. Tests
+
+| File | What it checks |
+|---|---|
+| `tests/unit/test_synthetic_data.py` | volume, reproducibility, seed sensitivity, persona coverage, 12+ months, identifiers, validator catches injected errors, reference SQL matches code, `--reset` keeps auth links |
+| `tests/unit/test_synthetic_data_quality.py` | golden counts + fingerprint, other as_of dates and larger customer counts stay valid, classifier statistics, scenario coverage (recurring bills, debt, irregular income, income-elsewhere, goal states, all four emergency-fund states), validator flags 5 kinds of injected inconsistency, seeding loads every record, SQLite constraints (duplicate import, non-positive amount, bad direction, unknown account, wrong owner) |
+| `tests/integration/test_postgres.py` | on real PostgreSQL: migrations re-run cleanly, CHECK/FK/UNIQUE constraints (direction vs type, transfer group, category, overflow, duplicate import, masked number, negative saved amount, no investment products), append-only audit, RLS isolation, exact NUMERIC(14,2) |
+

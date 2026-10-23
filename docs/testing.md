@@ -73,8 +73,8 @@ These results were recorded when this documentation was written:
 
 | Check | Result |
 |---|---|
-| Backend tests with `TEST_DATABASE_URL` set (PGlite) | **203 passed**, including the 6 PostgreSQL tests |
-| Backend tests without `TEST_DATABASE_URL` | **197 passed, 6 skipped** |
+| Backend tests with `TEST_DATABASE_URL` set (PGlite) | **228 passed**, including the 12 PostgreSQL tests |
+| Backend tests without `TEST_DATABASE_URL` | **216 passed, 12 skipped** |
 | Frontend `typecheck`, `lint`, `build` | clean |
 | Playwright e2e | **4 passed** |
 
@@ -94,13 +94,14 @@ Counts come from `pytest --collect-only`. Parametrised tests are counted once pe
 | `unit/test_money_and_formatting.py` | 6 | 12 | HALF_UP rounding, float rejection, paise round trip, `safe_ratio` returning None, INR grouping (7 cases), month arithmetic |
 | `unit/test_recommendation_engine.py` | 15 | 74 | Every rule, suppression, consent, reproducibility, plus a 60-case run over every synthetic customer for safety and traceability |
 | `unit/test_synthetic_data.py` | 8 | 8 | Volume, reproducibility, persona coverage, 12+ months, no real-looking identifiers, validator catches injected errors, reference SQL matches code, `--reset` keeps linked auth users |
+| `unit/test_synthetic_data_quality.py` | 9 | 19 | Golden counts and SHA-256 fingerprint, other as_of dates and customer counts, classifier statistics, scenario coverage, all four emergency-fund states, validator flags injected inconsistencies, seeding loads every record, SQLite constraints |
 | `integration/test_api.py` | 17 | 17 | Health, OpenAPI, scoping, schemas, pagination and filters, invalid inputs, 404s, analytics, goals, recommendations, feedback, consent, low confidence, rule catalogue, data-quality events |
 | `integration/test_database_failures.py` | 2 | 2 | Health reports `degraded`. A protected route returns 503 without leaking details |
 | `integration/test_schema_parity.py` | 2 | 2 | SQL vs ORM table and column names |
-| `integration/test_postgres.py` | 6 | 6 | Re-runnable migrations, constraints, append-only audit, RLS isolation, exact NUMERIC, API on PostgreSQL |
+| `integration/test_postgres.py` | 8 | 12 | Re-runnable migrations, CHECK/FK/UNIQUE constraints (direction vs type, transfer group, category, overflow, duplicate import, masked number, negative saved amount, no investment products), append-only audit, RLS isolation, exact NUMERIC, API on PostgreSQL |
 | `security/test_authorization.py` | 8 | 23 | 401 on all 16 protected routes, invalid tokens, 403 without a profile, cross-customer reads and writes, foreign goal IDs, foreign feedback, advisor read-only |
 | `security/test_hardening.py` | 12 | 12 | No secrets in responses, identical login errors, login and refresh rate limits, per-user rate-limit buckets, local login disabled in Supabase mode, injection, oversized body, no input echo, CORS, headers, audit hygiene |
-| **Total** | **121** | **203** | 141 unit, 27 integration (6 of them PostgreSQL), 35 security |
+| **Total** | **132** | **228** | 160 unit, 33 integration (12 of them PostgreSQL), 35 security |
 
 The e2e spec (`frontend/e2e/customer-journey.spec.ts`) contains 4 tests:
 1. Unauthenticated visitors are redirected to login.

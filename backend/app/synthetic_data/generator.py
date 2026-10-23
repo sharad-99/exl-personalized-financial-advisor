@@ -363,6 +363,9 @@ class _CustomerBuilder:
         dependents = rng.randint(*spec.dependents)
         is_stale = spec.stale_days is not None
         missing_income = is_stale and self.index % 2 == 0
+        # Incomplete-data scenario: income is paid into another bank, so this account shows spending
+        # but no income credits, and no income is declared either. Analytics must not treat it as zero.
+        self.income_elsewhere = missing_income
         missing_balance = is_stale and self.index % 3 == 0
 
         created = datetime.combine(self.start - timedelta(days=30), time(9, 0), tzinfo=UTC)
@@ -488,7 +491,9 @@ class _CustomerBuilder:
     ) -> None:
         rng, spec = self.rng, self.spec
         # Income
-        if spec.income_pattern == "irregular":
+        if self.income_elsewhere:
+            pass
+        elif spec.income_pattern == "irregular":
             total = int(income * rng.choice([0.35, 0.6, 0.9, 1.0, 1.2, 1.5, 1.8])) * 100
             parts = rng.randint(2, 6)
             for _ in range(parts):
@@ -518,7 +523,7 @@ class _CustomerBuilder:
                 f"NEFT/SALARY/{employer.upper()}",
                 employer,
             )
-        if month.month in (3, 6, 9, 12):
+        if month.month in (3, 6, 9, 12) and not self.income_elsewhere:
             self._add(
                 savings,
                 self._day(month, 28, 28),

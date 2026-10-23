@@ -117,7 +117,7 @@ A `stale_profile` segment exists only to exercise stale or missing-data handling
 | Privacy | Synthetic data only. Masked account numbers. Reserved `.test` emails. Consent controls. Data minimisation in logs and audit |
 | Performance | Interactive responses for one customer's data (about 400 transactions per customer). 15 s hard request timeout and 10 s database statement timeout |
 | Accessibility | Keyboard-reachable navigation, a skip link, labelled controls |
-| Maintainability | Layered backend (routes, deps, services, repositories). Typed code. ruff, ESLint and TypeScript checks. 203 backend tests and 4 e2e tests |
+| Maintainability | Layered backend (routes, deps, services, repositories). Typed code. ruff, ESLint and TypeScript checks. 228 backend tests and 4 e2e tests |
 | Portability | Runs locally with SQLite and no external services. Deploys on Supabase, any Python host and Vercel |
 
 ## 7. KPIs

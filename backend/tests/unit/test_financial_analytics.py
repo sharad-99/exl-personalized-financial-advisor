@@ -190,3 +190,7 @@ def test_no_income_gives_explicit_status() -> None:
     result = compute_analytics(customer(rows), AS_OF)
     assert result.savings_rate.status == "no_income"
     assert result.savings_rate.value_pct is None
+    # Unobserved income is unknown, never a silent zero; expenses are still reported.
+    assert result.monthly_averages.income is None
+    assert result.monthly_averages.net_observed_cash_flow is None
+    assert result.monthly_averages.expenses == d("27000.00")

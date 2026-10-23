@@ -360,6 +360,15 @@ using these mappings:
 - `Money` is stored as an exact decimal string on SQLite and as `NUMERIC(14,2)` on PostgreSQL.
 - JSON becomes `JSONB` on PostgreSQL.
 - `PRAGMA foreign_keys=ON` is set on every SQLite connection.
+- Money CHECK constraints in the ORM cast to a number (`CAST(amount AS NUMERIC) > 0`, goal target `> 0`, goal
+  saved `>= 0`). Without the cast, SQLite compares the stored decimal *text* with a number and always passes, so
+  a zero or negative amount would be accepted locally. `tests/unit/test_synthetic_data_quality.py::test_database_constraints`
+  covers this together with the duplicate-import UNIQUE, the composite owner FK and the direction check.
+
+The ORM carries only a subset of the SQL CHECK constraints (role, balance pair, money signs, direction). The
+full set — category and type lists, direction/type pairing, transfer group, reversal link, masked-number format,
+status lists, "no investment products" — exists only in the PostgreSQL migrations and is tested by
+`tests/integration/test_postgres.py`.
 
 What SQLite mode does **not** have: RLS, the `updated_at` and append-only triggers, and the PostgreSQL-specific
 partial or expression indexes. Run the PostgreSQL tests (`pytest -m postgres`) to cover those.

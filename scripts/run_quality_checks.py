@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import subprocess
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,8 +21,8 @@ def checks(backend_only: bool) -> list[tuple[str, list[str], Path]]:
     backend = ROOT / "backend"
     frontend = ROOT / "frontend"
     items = [
-        ("ruff lint", [str(PY), "-m", "ruff", "check", "app", "tests"], backend),
-        ("ruff format", [str(PY), "-m", "ruff", "format", "--check", "app", "tests"], backend),
+        ("ruff lint", [str(PY), "-m", "ruff", "check", "app", "tests", "../scripts"], backend),
+        ("ruff format", [str(PY), "-m", "ruff", "format", "--check", "app", "tests", "../scripts"], backend),
         ("synthetic data validation", [str(PY), str(ROOT / "scripts" / "validate_synthetic_data.py")], ROOT),
         ("backend tests", [str(PY), "-m", "pytest", "-q", "-p", "no:cacheprovider"], backend),
     ]

@@ -101,6 +101,68 @@ def test_constraints_enforced(pg_engine) -> None:  # type: ignore[no-untyped-def
             )
 
 
+TXN_INSERT = (
+    "insert into transactions (account_id, customer_id, external_ref, posted_on, amount, direction, "
+    "transaction_type, category, description, transfer_group_id) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+)
+
+
+@pytest.mark.parametrize(
+    ("values", "error"),
+    [
+        # credit cannot be a purchase (direction must match type)
+        (("C1", "2026-01-01", 5, "credit", "purchase", "dining", "x", None), psycopg.errors.CheckViolation),
+        # transfers require a transfer group, non-transfers must not have one
+        (("C2", "2026-01-01", 5, "debit", "transfer_out", "transfer", "x", None), psycopg.errors.CheckViolation),
+        (
+            ("C3", "2026-01-01", 5, "debit", "purchase", "dining", "x", "00000000-0000-4000-8000-000000000009"),
+            psycopg.errors.CheckViolation,
+        ),
+        # unknown category
+        (("C4", "2026-01-01", 5, "debit", "purchase", "lottery", "x", None), psycopg.errors.CheckViolation),
+        # more than 2 decimal places is rounded by NUMERIC(14,2), so test overflow instead
+        (("C5", "2026-01-01", 10**13, "debit", "purchase", "dining", "x", None), psycopg.errors.NumericValueOutOfRange),
+    ],
+)
+def test_transaction_check_constraints(pg_engine, values, error) -> None:  # type: ignore[no-untyped-def]
+    with psycopg.connect(_dsn(), autocommit=True) as conn:
+        account = conn.execute("select id, customer_id from accounts limit 1").fetchone()
+        with pytest.raises(error):
+            conn.execute(
+                TXN_INSERT,
+                (*account, *values),
+            )
+
+
+def test_other_table_constraints(pg_engine) -> None:  # type: ignore[no-untyped-def]
+    with psycopg.connect(_dsn(), autocommit=True) as conn:
+        customer, txn_ref, account = conn.execute(
+            "select t.customer_id, t.external_ref, t.account_id from transactions t limit 1"
+        ).fetchone()
+        with pytest.raises(psycopg.errors.UniqueViolation):  # duplicate import of the same bank record
+            conn.execute(
+                TXN_INSERT,
+                (account, customer, txn_ref, "2026-01-01", 5, "debit", "purchase", "dining", "dup", None),
+            )
+        with pytest.raises(psycopg.errors.CheckViolation):  # masked number must be XXXX + 4 digits
+            conn.execute(
+                "insert into accounts (customer_id, account_type, nickname, masked_number, opening_balance, "
+                "opening_balance_date, is_liquid) values (%s, 'savings', 'x', '1234567890', 0, '2026-01-01', true)",
+                (customer,),
+            )
+        with pytest.raises(psycopg.errors.CheckViolation):  # saved amount cannot be negative
+            conn.execute(
+                "insert into financial_goals (customer_id, name, goal_type, target_amount, saved_amount) "
+                "values (%s, 'neg', 'other', 100, -1)",
+                (customer,),
+            )
+        with pytest.raises(psycopg.errors.CheckViolation):  # products may never be investment products
+            conn.execute(
+                "insert into financial_products (code, name, product_type, description, is_investment_product) "
+                "values ('STOCK_TIPS', 'x', 'deposit', 'x', true)"
+            )
+
+
 def test_audit_events_are_append_only(pg_engine) -> None:  # type: ignore[no-untyped-def]
     with psycopg.connect(_dsn(), autocommit=True) as conn:
         conn.execute("insert into audit_events (action, entity_type) values ('test.event', 'test')")

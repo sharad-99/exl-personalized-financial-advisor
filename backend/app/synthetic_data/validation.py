@@ -11,7 +11,14 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from app.synthetic_data.generator import DEMO_EMAIL_DOMAIN, SyntheticDataset
+from app.services.spending_categorization import (
+    EXPENSE_TYPES,
+    INCOME_CATEGORIES,
+    INCOME_TYPES,
+    TRANSFER_TYPES,
+    classify_transactions,
+)
+from app.synthetic_data.generator import DEMO_EMAIL_DOMAIN, SyntheticDataset, customer_financial_data
 from app.utils.dates import months_between
 
 CREDIT_TYPES = {"salary", "business_income", "pension", "interest", "other_income", "transfer_in", "refund", "reversal"}
@@ -163,6 +170,8 @@ def validate_dataset(ds: SyntheticDataset, min_customers: int = 50, min_history_
         if o["end_date"] is not None and o["end_date"] < o["next_due_date"]:
             err(f"Obligation {o['id']} ends before it is due")
 
+    _check_classification(ds, report, dup_ids)
+
     missing_income = sum(1 for f in ds.financial_profiles if f["declared_monthly_income"] is None)
     missing_balance = sum(1 for a in ds.accounts if a["current_balance"] is None)
     if missing_income:
@@ -170,3 +179,65 @@ def validate_dataset(ds: SyntheticDataset, min_customers: int = 50, min_history_
     if missing_balance:
         warn(f"{missing_balance} accounts deliberately lack a reported balance")
     return report
+
+
+def _check_classification(ds: SyntheticDataset, report: ValidationReport, injected_duplicates: set) -> None:
+    """Run the production classifier over every customer and check the outcome is coherent.
+
+    * category must agree with transaction type (income/expense/transfer families);
+    * the duplicate detector must find exactly the injected duplicates (no misses, no false positives);
+    * every transfer must have a matched counterpart and every reversal an original;
+    * keyword rules should leave only a small uncategorised remainder.
+    """
+    err = report.errors.append
+    for t in ds.transactions:
+        ttype, category = t["transaction_type"], t["category"]
+        if ttype in INCOME_TYPES and category not in INCOME_CATEGORIES:
+            err(f"Transaction {t['id']}: income type {ttype} has non-income category {category}")
+        elif ttype in TRANSFER_TYPES and category != "transfer":
+            err(f"Transaction {t['id']}: transfer has category {category}")
+        elif (ttype in EXPENSE_TYPES or ttype in {"refund", "reversal"}) and (
+            category in INCOME_CATEGORIES or category == "transfer"
+        ):
+            err(f"Transaction {t['id']}: {ttype} has category {category}")
+
+    flows: Counter[str] = Counter()
+    exclusions: Counter[str] = Counter()
+    detected_duplicates: set = set()
+    uncategorized = expenses = 0
+    for customer_id in ds.customer_ids():
+        data = customer_financial_data(ds, customer_id)
+        for c in classify_transactions(data.transactions, data.accounts):
+            flows[c.flow] += 1
+            if c.exclusion_reason:
+                exclusions[c.exclusion_reason] += 1
+            if c.exclusion_reason == "probable_duplicate":
+                detected_duplicates.add(c.txn.id)
+            if c.flow == "expense":
+                expenses += 1
+                uncategorized += c.category == "uncategorized"
+    injected = {str(i) for i in injected_duplicates}
+    if detected_duplicates != injected:
+        err(
+            f"Duplicate detection mismatch: {len(injected - detected_duplicates)} injected duplicates missed, "
+            f"{len(detected_duplicates - injected)} genuine transactions flagged"
+        )
+    if exclusions["unmatched_transfer"]:
+        err(f"{exclusions['unmatched_transfer']} transfers have no matching counterpart leg")
+    if exclusions["orphan_reversal"]:
+        err(f"{exclusions['orphan_reversal']} reversals have no original transaction")
+    share = Decimal(uncategorized) / Decimal(expenses) if expenses else Decimal(0)
+    if share > Decimal("0.02"):
+        err(f"{share:.1%} of expenses remain uncategorised after keyword rules (limit 2%)")
+    report.stats.update(
+        {
+            "income_txns": flows["income"],
+            "expense_txns": flows["expense"],
+            "refund_txns": flows["refund"],
+            "excluded_txns": flows["excluded"],
+            "internal_transfer_legs": exclusions["internal_transfer"],
+            "duplicates_detected": len(detected_duplicates),
+            "reversal_pairs": exclusions["reversal"],
+            "uncategorized_after_rules": uncategorized,
+        }
+    )

@@ -342,6 +342,9 @@ def compute_analytics(
         return from_paise(round(int(with_data[column].sum()) / months_with_data))
 
     avg_income, avg_spend = avg("income"), avg("spend")
+    if total_income == 0:
+        # No income observed at all: report it as unknown, not as zero income (it may be paid elsewhere).
+        avg_income = None
     averages = MonthlyAverages(
         income=avg_income,
         expenses=avg_spend,

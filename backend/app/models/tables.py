@@ -147,7 +147,9 @@ class Transaction(Base):
             name="transactions_account_owner_fk",
         ),
         UniqueConstraint("account_id", "external_ref", name="transactions_import_unique"),
-        CheckConstraint("amount > 0", name="transactions_amount_check"),
+        # CAST keeps these checks numeric on SQLite, where Money is stored as exact decimal text.
+        CheckConstraint("CAST(amount AS NUMERIC) > 0", name="transactions_amount_check"),
+        CheckConstraint("direction in ('credit', 'debit')", name="transactions_direction_check"),
         Index("transactions_customer_posted_idx", "customer_id", "posted_on"),
         Index("transactions_account_posted_idx", "account_id", "posted_on"),
         Index("transactions_customer_category_idx", "customer_id", "category"),
@@ -174,7 +176,8 @@ class Transaction(Base):
 class FinancialGoal(Base):
     __tablename__ = "financial_goals"
     __table_args__ = (
-        CheckConstraint("target_amount > 0", name="financial_goals_target_check"),
+        CheckConstraint("CAST(target_amount AS NUMERIC) > 0", name="financial_goals_target_check"),
+        CheckConstraint("CAST(saved_amount AS NUMERIC) >= 0", name="financial_goals_saved_check"),
         Index("financial_goals_customer_idx", "customer_id", "status"),
     )
 

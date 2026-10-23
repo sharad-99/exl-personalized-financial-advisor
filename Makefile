@@ -53,7 +53,7 @@ test-postgres: ## Run PostgreSQL-backed tests (needs TEST_DATABASE_URL; drops it
 	cd backend && .venv/bin/python -m pytest -q -m postgres
 
 lint: ## Lint backend and frontend
-	cd backend && .venv/bin/ruff check app tests && .venv/bin/ruff format --check app tests
+	cd backend && .venv/bin/ruff check app tests ../scripts && .venv/bin/ruff format --check app tests ../scripts
 	cd frontend && npm run lint
 
 typecheck: ## TypeScript type check
