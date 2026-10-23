@@ -254,3 +254,31 @@ def test_data_quality_events_recorded(client: TestClient, advisor, dataset) -> N
     stale = next(f["customer_id"] for f in dataset.financial_profiles if f["persona_segment"] == "stale_profile")
     events = client.get(f"/api/v1/customers/{stale}/data-quality-events", headers=advisor).json()
     assert "stale_transactions" in {e["check_code"] for e in events}
+
+
+def test_concurrent_first_generation_does_not_conflict(session_factory, dataset) -> None:  # type: ignore[no-untyped-def]
+    """Simulates the race: a second session inserts the same recommendations first."""
+    from app.models.tables import Profile
+    from app.services import recommendation_service as svc
+
+    customer_id = dataset.customer_ids()[0]
+    with session_factory() as winner, session_factory() as loser:
+        loser_customer = loser.get(Profile, customer_id)
+        svc._refresh_once(winner, winner.get(Profile, customer_id), AS_OF, None)  # winner commits first
+        original = svc._refresh_once
+        calls = {"n": 0}
+
+        def stale_first_attempt(session, customer, as_of, actor):  # type: ignore[no-untyped-def]
+            calls["n"] += 1
+            if calls["n"] == 1:  # behave as if the rows were not visible yet -> duplicate insert
+                from sqlalchemy.exc import IntegrityError
+
+                raise IntegrityError("insert", {}, Exception("duplicate key"))
+            return original(session, customer, as_of, actor)
+
+        svc._refresh_once = stale_first_attempt
+        try:
+            summary = svc.refresh_for_customer(loser, loser_customer, AS_OF, None)
+        finally:
+            svc._refresh_once = original
+        assert calls["n"] == 2 and summary.created == 0

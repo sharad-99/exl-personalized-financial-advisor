@@ -5,7 +5,26 @@ Audit date: 2026-10-24 (local time, IST). Repository: https://github.com/sharad-
 `111d9c0`). Everything was re-run when written; nothing is
 reported from memory. `PROGRESS.md` holds the original stage log and design decisions.
 
-## 0. Latest update — database & synthetic-data milestone (2026-10-24)
+## 0a. Latest update — Supabase sign-in verified end to end (2026-10-24)
+
+| Step | Result |
+|---|---|
+| Account owner reset the Supabase DB password and created `advisor@demo.exl.test`, `customer01@demo.exl.test` (auto-confirmed) | done by owner |
+| `scripts/link_supabase_users.py --apply` | 2 profiles linked (advisor, customer01) |
+| Local run in Supabase mode (`AUTH_MODE=supabase`, backend → Supabase Postgres, frontend → Supabase Auth) | `/health` ok, `auth_mode: supabase`; local demo login endpoint returns 404 |
+| First sign-in attempt | **Failed**: backend returned 401 on every request. Cause: python.org macOS Python has no CA store, so fetching Supabase's JWKS (ES256 keys) failed TLS verification |
+| Fix | `core/security.py`: JWKS client verifies TLS with the `certifi` bundle (now a direct dependency); rejected tokens log the reason (never the token) |
+| Second sign-in (owner, in browser) | customer01 and advisor both signed in; dashboards load from Supabase |
+| Live isolation check from customer01's browser session | own analytics 200; another customer's profile / analytics / transactions 404; creating a goal for another customer 404; customer list size 1 |
+| Advisor session | read other customers (allowed, read-only) |
+| Bug found in logs | concurrent first loads of recommendations → one request 409 (duplicate insert of deterministic IDs). Fixed: refresh retries once after rolling back an `IntegrityError` |
+| New tests | ES256 tokens via JWKS (valid accepted; wrong audience, issuer or signing key rejected); certifi-backed JWKS client; concurrent first-generation retry |
+| `cd backend && TEST_DATABASE_URL=<throwaway PGlite> .venv/bin/python -m pytest -q` | **231 passed**, 0 failed |
+| Same without `TEST_DATABASE_URL` | **219 passed, 12 skipped** |
+
+Stage 7 (authentication & security) is now **verified for both auth modes**.
+
+## 0. Earlier update — database & synthetic-data milestone (2026-10-24)
 
 The milestone's core (12-table normalized schema with FKs, CHECK/UNIQUE constraints, indexes, NUMERIC(14,2) money
 and RLS; deterministic 60-persona generator with 13 months + partial month; seeder; validator; docs) already
@@ -108,10 +127,10 @@ Live Supabase project `exl-advisor` (Mumbai) — checks run from this machine:
 | 4 Recommendation engine | Complete | Rule, suppression, reproducibility and 60-persona safety tests pass |
 | 5 FastAPI endpoints + DB | Complete | Integration tests pass on SQLite and PostgreSQL |
 | 6 Frontend | Complete for local mode | Build passes; e2e passes; every screen checked manually as customer and advisor |
-| 7 Authentication & security | **Partially verified** | Local auth mode verified end-to-end. Supabase auth mode: HS256 token verification unit-tested only; JWKS (asymmetric) verification and browser sign-in via Supabase **not yet exercised** |
+| 7 Authentication & security | Complete | Local auth verified end-to-end; Supabase auth verified end-to-end (ES256/JWKS, browser sign-in, live isolation) — see section 0a |
 | 8 Tests, quality, CI | Complete | Local results above; GitHub Actions green |
 | 9 Local end-to-end | Complete | Playwright 4/4 plus manual walkthrough |
-| 10 Deployment | **In progress** | GitHub repo created and pushed. Supabase database migrated, seeded and RLS-checked; public sign-ups disabled; anonymous REST access verified denied. **Not done:** Supabase Auth users + profile linking, backend hosting (Render), frontend hosting (Vercel), production smoke test |
+| 10 Deployment | **In progress** | GitHub repo created and pushed. Supabase database migrated, seeded and RLS-checked; public sign-ups disabled; anonymous REST access verified denied. Demo users created and linked. **Not done:** backend hosting (Render), frontend hosting (Vercel), production smoke test |
 
 ## 4. Secrets and data audit
 
@@ -130,12 +149,12 @@ repository or the Supabase project.
 ## 5. Missing functionality, known gaps and blockers
 
 Blockers (need the account owner):
-1. Supabase Auth users not yet created, therefore not linked to profiles (sign-ups are now disabled).
+1. ~~Supabase Auth users~~ — created and linked (section 0a).
 2. Backend not deployed (needs a Render or similar account and secret entry by the owner).
 3. Frontend not deployed (needs a Vercel account; depends on the backend URL).
 
 Not yet verified:
-4. Supabase-mode sign-in end to end (browser → Supabase Auth → proxy → JWKS verification in FastAPI).
+4. ~~Supabase-mode sign-in end to end~~ — verified (section 0a).
 5. `docker-compose.yml` local PostgreSQL path (Docker is not installed on this machine).
 6. The Python version to pin on Render (`PYTHON_VERSION`) — must be checked against Render's supported list.
 
@@ -154,8 +173,7 @@ Failed tests: **none**.
 
 ## 6. Recommended next step
 
-Finish the Supabase Auth setup, because it unblocks the only unverified security path and both hosting steps:
-the account owner creates `advisor@demo.exl.test` and `customer01@demo.exl.test` in Supabase Auth (auto-confirm);
-then run `scripts/link_supabase_users.py --apply` and verify a Supabase-issued token against the backend locally
-(`AUTH_MODE=supabase`) **before** deploying to Render and Vercel. After that, the next milestone is hosting the
-backend (Render) and frontend (Vercel).
+Deploy the backend to Render (Blueprint from `render.yaml`) with `ENVIRONMENT=production`, `AUTH_MODE=supabase`,
+`SUPABASE_URL`, `DATABASE_URL` (Session pooler) and `CORS_ALLOWED_ORIGINS`, then the frontend to Vercel (root
+`frontend`, `AUTH_MODE=supabase`, `API_BASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`),
+add the Vercel URL to Supabase Auth URL configuration, and run a production smoke test.

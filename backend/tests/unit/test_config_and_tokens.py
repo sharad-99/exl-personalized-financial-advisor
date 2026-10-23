@@ -145,3 +145,48 @@ def test_log_redaction() -> None:
     assert token not in text
     assert "hunter2" not in text
     assert "[REDACTED]" in text
+
+
+def test_supabase_es256_tokens_verified_via_jwks(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Current Supabase projects sign with ES256 and publish keys at /auth/v1/.well-known/jwks.json."""
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    from app.core import security
+
+    private_key = ec.generate_private_key(ec.SECP256R1())
+
+    class FakeJwks:
+        def get_signing_key_from_jwt(self, _token):  # type: ignore[no-untyped-def]
+            return type("Key", (), {"key": private_key.public_key()})()
+
+    monkeypatch.setattr(security, "_jwks_client", lambda _url: FakeJwks())
+    settings = Settings(
+        _env_file=None,
+        auth_mode="supabase",
+        supabase_url="https://abc.supabase.co",  # type: ignore[call-arg]
+        database_url="sqlite:///:memory:",
+    )
+    subject = uuid.uuid4()
+    claims = {
+        "sub": str(subject),
+        "aud": "authenticated",
+        "iss": "https://abc.supabase.co/auth/v1",
+        "exp": datetime.now(UTC) + timedelta(hours=1),
+    }
+    token = jwt.encode(claims, private_key, algorithm="ES256", headers={"kid": "k1"})
+    assert decode_access_token(settings, token) == subject
+    for bad in ({**claims, "aud": "anon"}, {**claims, "iss": "https://evil.example/auth/v1"}):
+        with pytest.raises(AuthenticationError):
+            decode_access_token(settings, jwt.encode(bad, private_key, algorithm="ES256", headers={"kid": "k1"}))
+    other_key = ec.generate_private_key(ec.SECP256R1())  # signed by someone else
+    with pytest.raises(AuthenticationError):
+        decode_access_token(settings, jwt.encode(claims, other_key, algorithm="ES256", headers={"kid": "k1"}))
+
+
+def test_jwks_client_uses_certifi_bundle() -> None:
+    from app.core.security import _jwks_client
+
+    _jwks_client.cache_clear()
+    client = _jwks_client("https://example.invalid/jwks.json")
+    assert client.fetch_data.__self__ is client  # constructed without network access
+    assert getattr(client, "ssl_context", None) is not None

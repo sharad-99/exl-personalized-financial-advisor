@@ -16,6 +16,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import case, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.tables import Profile, Recommendation, RecommendationFeedback, RecommendationRule
@@ -82,6 +83,19 @@ def ensure_rules(session: Session) -> None:
 
 
 def refresh_for_customer(
+    session: Session, customer: Profile, as_of: date, actor_profile_id: uuid.UUID | None
+) -> RefreshSummary:
+    """Idempotent refresh. Two concurrent refreshes for the same customer (e.g. two browser tabs, or
+    React re-running an effect) can both try to insert the same deterministic IDs; the loser gets an
+    IntegrityError, rolls back and re-runs, now finding the rows the winner created."""
+    try:
+        return _refresh_once(session, customer, as_of, actor_profile_id)
+    except IntegrityError:
+        session.rollback()
+        return _refresh_once(session, customer, as_of, actor_profile_id)
+
+
+def _refresh_once(
     session: Session, customer: Profile, as_of: date, actor_profile_id: uuid.UUID | None
 ) -> RefreshSummary:
     data = load_financial_data(session, customer)

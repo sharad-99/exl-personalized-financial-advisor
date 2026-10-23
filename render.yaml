@@ -1,6 +1,6 @@
 # Render Blueprint for the FastAPI backend (optional; any Python host works).
-# Secrets are set in the Render dashboard, never here. Set PYTHON_VERSION to a
-# Render-supported 3.12+ release (verify the list in Render's docs).
+# Secrets are set in the Render dashboard, never here. Python is pinned to 3.14.8 (PYTHON_VERSION
+# below; backend/.python-version says 3.14), matching local development and CI.
 services:
   - type: web
     name: exl-advisor-api
@@ -10,6 +10,8 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.14.8"
       - key: ENVIRONMENT
         value: production
       - key: AUTH_MODE

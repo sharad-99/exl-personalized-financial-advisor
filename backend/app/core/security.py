@@ -12,6 +12,7 @@ Tokens are only ever read from the Authorization header and never logged.
 from __future__ import annotations
 
 import hmac
+import ssl
 import threading
 import time
 import uuid
@@ -20,6 +21,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from functools import lru_cache
 
+import certifi
 import jwt
 from jwt import PyJWKClient
 
@@ -75,7 +77,10 @@ def verify_password(supplied: str, expected: str) -> bool:
 
 @lru_cache(maxsize=4)
 def _jwks_client(url: str) -> PyJWKClient:
-    return PyJWKClient(url, cache_keys=True, lifespan=600, timeout=5)
+    # Verify TLS against certifi's CA bundle so key fetching does not depend on the host's
+    # certificate store (python.org builds on macOS ship without one).
+    context = ssl.create_default_context(cafile=certifi.where())
+    return PyJWKClient(url, cache_keys=True, lifespan=600, timeout=5, ssl_context=context)
 
 
 def decode_access_token(settings: Settings, token: str) -> uuid.UUID:

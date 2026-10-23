@@ -21,10 +21,13 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
+from app.core.logging import get_logger
 from app.core.security import AuthenticationError, Principal, decode_access_token, rate_limiter
 from app.db.connection import get_db
 from app.models.tables import Profile
 from app.repositories import customers as repo
+
+logger = get_logger("app.auth")
 
 DbSession = Annotated[Session, Depends(get_db)]
 AppSettings = Annotated[Settings, Depends(get_settings)]
@@ -43,6 +46,8 @@ def get_principal(request: Request, session: DbSession, settings: AppSettings) -
     try:
         subject = decode_access_token(settings, token)
     except AuthenticationError as exc:
+        # Log why (safe, fixed messages) but never the token itself.
+        logger.info("auth_rejected", extra={"fields": {"reason": str(exc), "cause": type(exc.__cause__).__name__}})
         raise ApiError(401, str(exc), headers={"WWW-Authenticate": "Bearer"}) from exc
     profile = repo.get_profile_by_auth_user(session, subject)
     if profile is None:
