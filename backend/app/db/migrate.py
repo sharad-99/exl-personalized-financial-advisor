@@ -34,6 +34,12 @@ def apply_migrations(database_url: str, directory: Path = MIGRATIONS_DIR) -> lis
             "create table if not exists public.schema_migrations "
             "(version text primary key, applied_at timestamptz not null default now())"
         )
+        # Keep the bookkeeping table out of Supabase's public Data API.
+        conn.execute("alter table public.schema_migrations enable row level security")
+        conn.execute(
+            "do $$ begin if exists (select 1 from pg_roles where rolname = 'anon') then "
+            "revoke all on public.schema_migrations from anon, authenticated; end if; end $$"
+        )
         done = {row[0] for row in conn.execute("select version from public.schema_migrations")}
         for path in migration_files(directory):
             if path.name in done:
