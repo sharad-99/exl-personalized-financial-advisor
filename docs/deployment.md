@@ -108,6 +108,9 @@ Serverless-specific behaviour (automatic when Vercel sets `VERCEL=1`, or with `S
 - **Rate limiting is per instance:** the in-memory limiter resets with each new instance, so it is weaker than on a
   single long-running server (documented limitation; a shared store such as Redis would fix it).
 - **Cold starts:** the first request after idle time imports pandas/NumPy and can take several seconds.
+- **Region:** `backend/vercel.json` and `frontend/vercel.json` pin functions to `bom1` (Mumbai), next to the
+  Supabase database (ap-south-1). With Vercel's default `iad1` (Washington, D.C.) every request paid a
+  cross-world connection setup (~1.9 s for `/health`, measured).
 
 Verified locally before deployment (clean install from `requirements.txt`, `VERCEL=1`, `ENVIRONMENT=production`,
 Supabase database): `/health` ok, `/docs` and `/openapi.json` 404, local demo login 404, no/forged token 401,
