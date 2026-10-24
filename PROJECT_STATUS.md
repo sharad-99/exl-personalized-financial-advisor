@@ -5,7 +5,34 @@ Audit date: 2026-10-24 (local time, IST). Repository: https://github.com/sharad-
 `111d9c0`). Everything was re-run when written; nothing is
 reported from memory. `PROGRESS.md` holds the original stage log and design decisions.
 
-## 0b. Latest update — backend prepared for Vercel (2026-10-24)
+## 0c. Latest update — deployed on Vercel (2026-10-24)
+
+| Component | Where | Status |
+|---|---|---|
+| Database + Auth | Supabase project `exl-advisor` (Mumbai, ap-south-1) | live; migrated, seeded (synthetic), RLS verified, sign-ups disabled, 2 linked demo users |
+| Backend (FastAPI) | Vercel project `exl-personalized-financial-advisor` → https://exl-personalized-financial-advisor.vercel.app | **live**, region `bom1` (Mumbai) |
+| Frontend (Next.js) | Vercel project `exl-financial-coach` | deploying (see next update) |
+
+Backend environment (Vercel, Production): `ENVIRONMENT=production`, `AUTH_MODE=supabase`, `SUPABASE_URL`,
+`CORS_ALLOWED_ORIGINS` (config) and `DATABASE_URL` (secret, entered by the account owner).
+
+Live backend checks (run from this machine against the URL above):
+
+| Check | Result |
+|---|---|
+| `GET /health` | `{"status":"ok","environment":"production","database":"ok","auth_mode":"supabase"}` |
+| `/docs`, `/redoc`, `/openapi.json` | 404 |
+| `POST /api/v1/auth/local/login` | 404 (local demo login disabled) |
+| `/api/v1/me`, `/api/v1/customers`, `/api/v1/recommendation-rules` without token | 401 with standard error body |
+| Forged token | 401 |
+| CORS preflight from `https://evil.example` | no `Access-Control-Allow-Origin` |
+| Security headers | HSTS, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` |
+| Latency, 10 × `/health` | ~1.9 s each in default region `iad1` → **~0.2 s** after pinning `bom1` (commit `1c9ca77`) |
+
+Notes: the first deployment was accidentally started before environment variables were set; the app refused to
+start (500) as designed and was redeployed after configuration. The project kept the default name.
+
+## 0b. Earlier update — backend prepared for Vercel (2026-10-24)
 
 Render's Blueprint flow required a paid plan and the first free deploy failed because Root Directory was empty
 (`Could not open requirements file`). Decision: host the FastAPI backend on Vercel (free Hobby, Python 3.14
