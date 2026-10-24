@@ -32,7 +32,7 @@ test("customer journey: dashboard, money coach, feedback, goals, sign out", asyn
   await signIn(page, "customer43@demo.exl.test"); // debt-stressed persona: always has open advice
   await expect(page.getByRole("heading", { name: "Your financial dashboard" })).toBeVisible();
   await expect(page.getByText("Avg monthly income")).toBeVisible();
-  await expect(page.getByText("Simulated data environment")).toBeVisible();
+  await expect(page.getByText("Simulated data", { exact: true })).toBeVisible();
 
   await nav(page).getByRole("link", { name: "Money coach" }).click();
   await expect(page.getByRole("heading", { name: "Money coach" })).toBeVisible();
@@ -63,7 +63,7 @@ test("customer journey: dashboard, money coach, feedback, goals, sign out", asyn
 
 test("advisor is read-only", async ({ page }) => {
   await signIn(page, "advisor@demo.exl.test");
-  await expect(page.getByText("Advisor (read-only)")).toBeVisible();
+  await expect(page.getByText("Advisor · read-only")).toBeVisible();
   await nav(page).getByRole("link", { name: "Goals" }).click();
   await expect(page.getByRole("button", { name: "New goal" })).toHaveCount(0);
 });

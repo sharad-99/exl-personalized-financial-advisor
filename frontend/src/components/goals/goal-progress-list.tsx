@@ -16,7 +16,7 @@ export function GoalProgressList({ goals }: { goals: Analytics["goals"] }) {
           <div className="mt-2">
             <ProgressBar value={Number(g.progress_pct)} label={`${g.name} progress`} />
           </div>
-          <p className="mt-1 text-xs text-ink-3 tabular-nums">
+          <p className="mt-1 text-xs text-ink-muted tabular-nums">
             {formatMoney(g.saved_amount)} of {formatMoney(g.target_amount)} ({Number(g.progress_pct).toFixed(0)}%)
             {g.target_date && ` · by ${formatDate(g.target_date)}`}
           </p>

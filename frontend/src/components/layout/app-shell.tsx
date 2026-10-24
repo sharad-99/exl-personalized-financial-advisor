@@ -27,6 +27,20 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
+function Wordmark() {
+  return (
+    <Link href="/dashboard" className="flex items-center gap-2.5 rounded-md px-1 py-1">
+      <span aria-hidden className="grid size-8 place-items-center rounded-md bg-gradient-to-br from-primary to-primary-warm text-sm font-bold text-white">
+        E
+      </span>
+      <span className="leading-tight">
+        <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/60">EXL</span>
+        <span className="block text-sm font-bold text-white">Financial Wellness Coach</span>
+      </span>
+    </Link>
+  );
+}
+
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { me, error, loading, refreshMe } = useSession();
@@ -44,7 +58,10 @@ function Shell({ children }: { children: ReactNode }) {
             href={item.href}
             onClick={() => setOpen(false)}
             aria-current={active ? "page" : undefined}
-            className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium", active ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white")}
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-1.5 text-[13px] font-bold leading-6 transition-colors duration-150 ease-standard",
+              active ? "bg-primary-ink text-white" : "text-white/70 hover:bg-primary-ink hover:text-white",
+            )}
           >
             <Icon className="size-4" aria-hidden />
             {isAdvisor && item.advisorLabel ? item.advisorLabel : item.label}
@@ -55,53 +72,81 @@ function Shell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen lg:flex">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">
+    <div className="min-h-screen bg-background">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-surface-elevated focus:px-3 focus:py-2">
         Skip to content
       </a>
-      <aside className={cn("fixed inset-y-0 left-0 z-40 w-64 flex-col bg-navy p-4 lg:static lg:flex", open ? "flex" : "hidden")}>
-        <div className="mb-8 flex items-center justify-between px-2">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-teal-300">EXL</p>
-            <p className="text-base font-semibold text-white">Financial Wellness Coach</p>
+
+      {/* Top bar: dark glass across the full width */}
+      <header className="shell-glass fixed inset-x-0 top-0 z-40 flex h-16 items-center gap-3 border-b border-white/10 px-4">
+        <button
+          type="button"
+          className="grid size-10 place-items-center rounded-md text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
+          onClick={() => setOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu className="size-5" />
+        </button>
+        <div className="hidden w-[224px] shrink-0 lg:block">
+          <Wordmark />
+        </div>
+        <div className="min-w-0 flex-1">
+          {me &&
+            (isAdvisor ? (
+              <CustomerPicker />
+            ) : (
+              <p className="truncate text-sm text-white/70">
+                Welcome back, <span className="font-semibold text-white">{me.display_name}</span>
+              </p>
+            ))}
+        </div>
+        <span className="hidden rounded-full bg-status-mock-bg px-2.5 py-1 text-xs font-semibold text-status-mock-fg md:inline">Simulated data</span>
+        {me && (
+          <div className="flex items-center gap-2">
+            <span className="hidden text-right text-xs leading-tight text-white/60 sm:block">
+              <span className="block font-semibold text-white">{me.display_name}</span>
+              {isAdvisor ? "Advisor · read-only" : "Customer"}
+            </span>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="grid size-10 place-items-center rounded-md text-white/70 transition-colors duration-150 hover:bg-primary-ink hover:text-white"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut className="size-4" aria-hidden />
+            </button>
           </div>
-          <button type="button" className="text-slate-300 lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu">
+        )}
+      </header>
+
+      {/* Sidebar: dark glass, 256px; slides in on small screens */}
+      {open && <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setOpen(false)} aria-hidden />}
+      <aside
+        className={cn(
+          "shell-glass fixed bottom-0 left-0 z-50 flex w-64 flex-col border-r border-white/10 p-4 transition-transform duration-300 ease-standard lg:top-16 lg:z-30 lg:translate-x-0",
+          open ? "top-0 translate-x-0" : "top-0 -translate-x-full",
+        )}
+      >
+        <div className="mb-6 flex items-center justify-between lg:hidden">
+          <Wordmark />
+          <button type="button" className="grid size-10 place-items-center rounded-md text-white/70 hover:bg-white/10" onClick={() => setOpen(false)} aria-label="Close menu">
             <X className="size-5" />
           </button>
         </div>
         {nav}
-        <div className="mt-auto rounded-lg bg-white/5 p-3 text-xs text-slate-300">
+        <div className="mt-auto rounded-md border border-white/10 bg-white/5 p-3 text-xs leading-5 text-white/70">
           All figures are computed from <strong className="text-white">synthetic</strong> data. This is a demo, not regulated financial advice.
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="bg-navy-2 px-4 py-1.5 text-center text-xs font-medium text-white" role="note">
-          Simulated data environment — no real customer or bank data is used.
-        </div>
-        <header className="flex flex-wrap items-center gap-3 border-b border-line bg-surface px-4 py-3 lg:px-8">
-          <button type="button" className="rounded-md p-1 text-ink-2 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
-            <Menu className="size-5" />
-          </button>
-          <div className="min-w-0 flex-1">{me && (isAdvisor ? <CustomerPicker /> : <p className="truncate text-sm text-ink-2">Welcome back, <span className="font-medium text-ink">{me.display_name}</span></p>)}</div>
-          {me && (
-            <div className="flex items-center gap-3">
-              <span className="hidden text-right text-xs text-ink-3 sm:block">
-                <span className="block font-medium text-ink">{me.display_name}</span>
-                {isAdvisor ? "Advisor (read-only)" : "Customer"}
-              </span>
-              <button type="button" onClick={() => void signOut()} className="inline-flex items-center gap-1 rounded-lg border border-line px-3 py-1.5 text-sm text-ink-2 hover:bg-slate-50">
-                <LogOut className="size-4" aria-hidden /> Sign out
-              </button>
-            </div>
-          )}
-        </header>
-        <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8">
+      <main id="main" className="pt-16 lg:pl-64">
+        <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-8">
           {loading && <LoadingState label="Loading your profile…" />}
           {error && <ErrorState error={error} onRetry={refreshMe} />}
           {me && children}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

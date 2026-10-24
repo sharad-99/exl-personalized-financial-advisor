@@ -39,7 +39,8 @@ export function LoginForm() {
     }
   }
 
-  const input = (invalid: boolean) => `mt-1 block w-full rounded-lg border px-3 py-2 text-sm ${invalid ? "border-bad" : "border-line"}`;
+  const input = (invalid: boolean) =>
+    `mt-1 block h-10 w-full rounded-sm border bg-surface-elevated px-3 text-sm text-ink transition-colors duration-150 focus:border-primary ${invalid ? "border-danger" : "border-outline-strong"}`;
 
   return (
     <form onSubmit={submit} noValidate className="space-y-4" aria-label="Sign in">
@@ -54,7 +55,7 @@ export function LoginForm() {
           aria-describedby={errors.email ? "email-error" : undefined}
           className={input(Boolean(errors.email))}
         />
-        {errors.email && <span id="email-error" className="mt-1 block text-xs text-bad">{errors.email}</span>}
+        {errors.email && <span id="email-error" className="mt-1 block text-xs text-danger-ink">{errors.email}</span>}
       </label>
       <label className="block text-sm">
         <span className="font-medium text-ink">Password</span>
@@ -67,14 +68,14 @@ export function LoginForm() {
           aria-describedby={errors.password ? "password-error" : undefined}
           className={input(Boolean(errors.password))}
         />
-        {errors.password && <span id="password-error" className="mt-1 block text-xs text-bad">{errors.password}</span>}
+        {errors.password && <span id="password-error" className="mt-1 block text-xs text-danger-ink">{errors.password}</span>}
       </label>
       {formError && (
-        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-bad">
+        <p role="alert" className="rounded-sm bg-status-danger-bg/60 px-3 py-2 text-sm text-danger-ink">
           {formError}
         </p>
       )}
-      <button type="submit" disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy px-4 py-2.5 text-sm font-medium text-white hover:bg-navy-2 disabled:bg-slate-400">
+      <button type="submit" disabled={busy} className="flex h-10 w-full items-center justify-center gap-2 rounded-sm bg-primary-ink px-4 text-sm font-medium text-white transition-colors duration-150 hover:bg-primary-ink/90 disabled:bg-outline-strong disabled:text-ink-muted">
         {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
         {busy ? "Signing in…" : "Sign in"}
       </button>

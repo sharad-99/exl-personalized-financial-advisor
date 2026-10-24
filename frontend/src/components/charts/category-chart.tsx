@@ -20,23 +20,23 @@ export function CategoryChart({ categories, limit = 8 }: { categories: Analytics
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 72, left: 0, bottom: 0 }} barCategoryGap={6}>
             <XAxis type="number" hide />
-            <YAxis type="category" dataKey="name" width={110} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#44506a" }} />
+            <YAxis type="category" dataKey="name" width={110} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#423d38" }} />
             <Tooltip
-              cursor={{ fill: "rgba(15,27,45,0.04)" }}
+              cursor={{ fill: "rgba(254,110,0,0.06)" }}
               formatter={(value) => [formatMoney(String(value)), "Spent"]}
-              contentStyle={{ borderRadius: 8, borderColor: "#e3e7ee", fontSize: 12 }}
+              contentStyle={{ borderRadius: 8, borderColor: "#e3e0dd", fontSize: 12 }}
             />
-            <Bar dataKey="amount" fill="#0d9488" radius={[0, 4, 4, 0]} maxBarSize={18}>
-              <LabelList dataKey="amount" position="right" formatter={(v) => formatMoney(String(v))} style={{ fontSize: 11, fill: "#44506a" }} />
+            <Bar dataKey="amount" fill="#fe6e00" fillOpacity={0.6} radius={[0, 4, 4, 0]} maxBarSize={18}>
+              <LabelList dataKey="amount" position="right" formatter={(v) => formatMoney(String(v))} style={{ fontSize: 11, fill: "#423d38" }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <details className="mt-2 text-xs text-ink-2">
-        <summary className="cursor-pointer text-ink-3">Show as table</summary>
+      <details className="mt-2 text-xs text-ink-muted">
+        <summary className="cursor-pointer text-ink-muted">Show as table</summary>
         <table className="mt-2 w-full text-left tabular-nums">
           <caption className="sr-only">Spending by category for the analysis period</caption>
-          <thead className="text-ink-3">
+          <thead className="text-xs uppercase tracking-wider text-ink-muted">
             <tr>
               <th className="py-1 font-medium">Category</th>
               <th className="py-1 font-medium">Type</th>
@@ -46,7 +46,7 @@ export function CategoryChart({ categories, limit = 8 }: { categories: Analytics
           </thead>
           <tbody>
             {categories.map((c) => (
-              <tr key={c.category} className="border-t border-line">
+              <tr key={c.category} className="border-t border-outline">
                 <td className="py-1">{humanize(c.category)}</td>
                 <td className="py-1">{humanize(c.group)}</td>
                 <td className="py-1 text-right">{formatMoney(c.amount)}</td>

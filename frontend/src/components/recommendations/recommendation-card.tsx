@@ -9,7 +9,7 @@ import { formatDate, humanize } from "@/lib/formatting";
 import type { FeedbackAction, FeedbackReason, Recommendation } from "@/types/api";
 
 const PRIORITY_TONE = { high: "bad", medium: "warn", low: "neutral" } as const;
-const STATUS_TONE = { pending: "teal", accepted: "good", dismissed: "neutral", completed: "good", expired: "neutral" } as const;
+const STATUS_TONE = { pending: "primary", accepted: "info", dismissed: "neutral", completed: "good", expired: "neutral" } as const;
 const CORRECTION_REASONS: { value: FeedbackReason; label: string }[] = [
   { value: "income_incorrect", label: "My income is wrong" },
   { value: "expense_incorrect", label: "My expenses are wrong" },
@@ -73,17 +73,17 @@ export function RecommendationCard({
   const actionable = !readOnly && (rec.status === "pending" || rec.status === "accepted");
 
   return (
-    <article className="rounded-xl border border-line bg-surface p-5" aria-labelledby={`rec-${rec.id}`}>
+    <article className="rounded-lg border border-outline bg-surface-elevated p-5" aria-labelledby={`rec-${rec.id}`}>
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={PRIORITY_TONE[rec.priority]}>{humanize(rec.priority)} priority</Badge>
         <Badge tone={STATUS_TONE[rec.status]}>{humanize(rec.status)}</Badge>
         <ConfidenceBadge level={rec.confidence} />
-        <span className="ml-auto text-xs text-ink-3">{humanize(rec.category)}</span>
+        <span className="ml-auto text-xs text-ink-muted">{humanize(rec.category)}</span>
       </div>
       <h3 id={`rec-${rec.id}`} className="mt-3 text-base font-semibold text-ink">
         {rec.title}
       </h3>
-      <p className="mt-1 text-sm text-ink-2">{rec.explanation}</p>
+      <p className="mt-1 text-sm text-ink-muted">{rec.explanation}</p>
       <p className="mt-2 text-sm text-ink">
         <span className="font-medium">Why: </span>
         {rec.reason}
@@ -91,8 +91,8 @@ export function RecommendationCard({
 
       {!compact && rec.suggested_actions.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">Suggested next steps</p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-ink-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Suggested next steps</p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-ink-muted">
             {rec.suggested_actions.map((a) => (
               <li key={a}>{a}</li>
             ))}
@@ -104,20 +104,20 @@ export function RecommendationCard({
         type="button"
         onClick={() => setShowEvidence((v) => !v)}
         aria-expanded={showEvidence}
-        className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-ink hover:underline"
+        className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary-ink hover:underline"
       >
         <ChevronDown className={cn("size-4 transition-transform", showEvidence && "rotate-180")} aria-hidden />
         {showEvidence ? "Hide" : "Show"} the numbers and assumptions
       </button>
       {showEvidence && (
-        <div className="mt-3 space-y-3 rounded-lg bg-slate-50 p-4 text-sm">
+        <div className="mt-3 space-y-3 rounded-sm bg-surface-soft/60 p-4 text-sm">
           <div>
             <p className="font-medium text-ink">Calculations</p>
             <dl className="mt-1 space-y-1">
               {Object.entries(calculations).map(([k, v]) => (
                 <div key={k} className="grid gap-1 sm:grid-cols-[180px_1fr]">
-                  <dt className="text-ink-3">{humanize(k)}</dt>
-                  <dd className="font-mono text-xs text-ink-2 break-words">{renderValue(v)}</dd>
+                  <dt className="text-ink-muted">{humanize(k)}</dt>
+                  <dd className="font-mono text-xs text-ink-muted break-words">{renderValue(v)}</dd>
                 </div>
               ))}
             </dl>
@@ -127,21 +127,21 @@ export function RecommendationCard({
             <dl className="mt-1 space-y-1">
               {Object.entries(inputs).map(([k, v]) => (
                 <div key={k} className="grid gap-1 sm:grid-cols-[180px_1fr]">
-                  <dt className="text-ink-3">{humanize(k)}</dt>
-                  <dd className="font-mono text-xs text-ink-2 break-words">{renderValue(v)}</dd>
+                  <dt className="text-ink-muted">{humanize(k)}</dt>
+                  <dd className="font-mono text-xs text-ink-muted break-words">{renderValue(v)}</dd>
                 </div>
               ))}
             </dl>
           </div>
           <div>
             <p className="font-medium text-ink">Assumptions and limitations</p>
-            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-ink-2">
+            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-ink-muted">
               {rec.assumptions.map((a) => (
                 <li key={a}>{a}</li>
               ))}
             </ul>
           </div>
-          <p className="text-xs text-ink-3">
+          <p className="text-xs text-ink-muted">
             Priority: {rec.priority_reason} · Confidence: {rec.confidence_reason} · Rule {rec.rule_id} v{rec.rule_version} · Data as of {formatDate(rec.data_as_of)} · Evaluated {formatDate(rec.analytics_as_of)} · Updated {formatDate(rec.updated_at)}
           </p>
         </div>
@@ -172,11 +172,11 @@ export function RecommendationCard({
           </Button>
         </div>
       )}
-      {readOnly && rec.status === "pending" && <p className="mt-3 text-xs text-ink-3">Advisors have read-only access; only the customer can respond.</p>}
+      {readOnly && rec.status === "pending" && <p className="mt-3 text-xs text-ink-muted">Advisors have read-only access; only the customer can respond.</p>}
 
       {mode && (
         <form
-          className="mt-3 space-y-3 rounded-lg border border-line p-4"
+          className="mt-3 space-y-3 rounded-sm border border-outline p-4"
           onSubmit={(e) => {
             e.preventDefault();
             void send(mode === "dismiss" ? "dismissed" : "correction", reason);
@@ -184,7 +184,7 @@ export function RecommendationCard({
         >
           <label className="block text-sm">
             <span className="font-medium">{mode === "dismiss" ? "Why are you dismissing this?" : "What looks wrong?"}</span>
-            <select value={reason} onChange={(e) => setReason(e.target.value as FeedbackReason)} className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2 text-sm">
+            <select value={reason} onChange={(e) => setReason(e.target.value as FeedbackReason)} className="mt-1 block w-full rounded-sm border border-outline bg-surface-elevated px-3 py-2 text-sm">
               {(mode === "dismiss" ? DISMISS_REASONS : CORRECTION_REASONS).map((r) => (
                 <option key={r.value} value={r.value}>
                   {r.label}
@@ -194,8 +194,8 @@ export function RecommendationCard({
           </label>
           <label className="block text-sm">
             <span className="font-medium">Comment (optional)</span>
-            <textarea value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} rows={2} className="mt-1 block w-full rounded-lg border border-line px-3 py-2 text-sm" />
-            <span className="text-xs text-ink-3">{comment.length}/500 · Please don&apos;t include account numbers or passwords.</span>
+            <textarea value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} rows={2} className="mt-1 block w-full rounded-sm border border-outline px-3 py-2 text-sm" />
+            <span className="text-xs text-ink-muted">{comment.length}/500 · Please don&apos;t include account numbers or passwords.</span>
           </label>
           <div className="flex gap-2">
             <Button type="submit" disabled={busy}>Submit</Button>
@@ -204,7 +204,7 @@ export function RecommendationCard({
         </form>
       )}
       {message && (
-        <p role="status" className={cn("mt-3 text-sm", message.tone === "ok" ? "text-good" : "text-bad")}>
+        <p role="status" className={cn("mt-3 text-sm", message.tone === "ok" ? "text-success-ink" : "text-danger-ink")}>
           {message.text}
         </p>
       )}

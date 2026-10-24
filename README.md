@@ -173,4 +173,5 @@ See [PROGRESS.md](PROGRESS.md) for the stage log and next steps, and
 [API](docs/api-specification.md) · [Recommendation engine](docs/recommendation-engine.md) ·
 [Synthetic data](docs/synthetic-data.md) · [Security](docs/security.md) ·
 [Testing](docs/testing.md) · [Deployment](docs/deployment.md) ·
-[Product requirements](docs/product-requirements.md)
+[Product requirements](docs/product-requirements.md) ·
+[Design system](docs/design-system.md)

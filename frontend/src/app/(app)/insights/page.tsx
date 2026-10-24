@@ -62,7 +62,7 @@ export default function MoneyCoachPage() {
       {a && <DataQualityPanel dq={a.data_quality} />}
       {refreshError && <ErrorState error={{ message: refreshError }} />}
       {lastAction && (
-        <div role="status" className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm text-good">
+        <div role="status" className="rounded-sm border border-success/40 bg-status-production-bg px-4 py-2 text-sm text-success-ink">
           {lastAction}
         </div>
       )}
@@ -104,7 +104,7 @@ export default function MoneyCoachPage() {
         </div>
         <div className="space-y-4">
           <Card title="How this works">
-            <ul className="list-disc space-y-1 pl-5 text-sm text-ink-2">
+            <ul className="list-disc space-y-1 pl-5 text-sm text-ink-muted">
               <li>Every suggestion comes from a fixed, versioned rule applied to your own (synthetic) data — no AI guesswork.</li>
               <li>Open &ldquo;Show the numbers&rdquo; to see each input and calculation.</li>
               <li>We never suggest saving money already committed to essentials, never suggest loans, and never recommend specific investments.</li>
@@ -114,10 +114,10 @@ export default function MoneyCoachPage() {
           {a && (
             <Card title="Your numbers at a glance">
               <dl className="space-y-2 text-sm">
-                <div className="flex justify-between"><dt className="text-ink-2">Avg income</dt><dd className="tabular-nums">{formatMoney(a.monthly_averages.income)}</dd></div>
-                <div className="flex justify-between"><dt className="text-ink-2">Avg expenses</dt><dd className="tabular-nums">{formatMoney(a.monthly_averages.expenses)}</dd></div>
-                <div className="flex justify-between"><dt className="text-ink-2">Estimated capacity</dt><dd className="tabular-nums">{formatMoney(a.savings_capacity.estimated_monthly_capacity)}</dd></div>
-                <div className="flex justify-between"><dt className="text-ink-2">Recurring subscriptions</dt><dd className="tabular-nums">{a.recurring_expenses.filter((r) => r.is_subscription).length}</dd></div>
+                <div className="flex justify-between"><dt className="text-ink-muted">Avg income</dt><dd className="tabular-nums">{formatMoney(a.monthly_averages.income)}</dd></div>
+                <div className="flex justify-between"><dt className="text-ink-muted">Avg expenses</dt><dd className="tabular-nums">{formatMoney(a.monthly_averages.expenses)}</dd></div>
+                <div className="flex justify-between"><dt className="text-ink-muted">Estimated capacity</dt><dd className="tabular-nums">{formatMoney(a.savings_capacity.estimated_monthly_capacity)}</dd></div>
+                <div className="flex justify-between"><dt className="text-ink-muted">Recurring subscriptions</dt><dd className="tabular-nums">{a.recurring_expenses.filter((r) => r.is_subscription).length}</dd></div>
               </dl>
             </Card>
           )}

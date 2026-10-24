@@ -61,13 +61,13 @@ export function GoalForm({ customerId, goal, onSaved, onCancel }: { customerId: 
       <span className="font-medium text-ink">{label}</span>
       {input}
       {errors[key] ? (
-        <span id={`${key}-error`} className="mt-1 block text-xs text-bad">{errors[key]}</span>
+        <span id={`${key}-error`} className="mt-1 block text-xs text-danger-ink">{errors[key]}</span>
       ) : (
-        hint && <span className="mt-1 block text-xs text-ink-3">{hint}</span>
+        hint && <span className="mt-1 block text-xs text-ink-muted">{hint}</span>
       )}
     </label>
   );
-  const inputClass = (key: string) => `mt-1 block w-full rounded-lg border px-3 py-2 text-sm ${errors[key] ? "border-bad" : "border-line"}`;
+  const inputClass = (key: string) => `mt-1 block w-full rounded-sm border px-3 py-2 text-sm ${errors[key] ? "border-danger" : "border-outline"}`;
   const aria = (key: string) => ({ "aria-invalid": Boolean(errors[key]), "aria-describedby": errors[key] ? `${key}-error` : undefined });
 
   return (
@@ -95,7 +95,7 @@ export function GoalForm({ customerId, goal, onSaved, onCancel }: { customerId: 
           ))}
         </select>,
       )}
-      {serverError && <p role="alert" className="text-sm text-bad sm:col-span-2">{serverError}</p>}
+      {serverError && <p role="alert" className="text-sm text-danger-ink sm:col-span-2">{serverError}</p>}
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" disabled={busy}>{busy ? "Saving…" : goal ? "Save changes" : "Create goal"}</Button>
         <Button variant="secondary" onClick={onCancel}>Cancel</Button>

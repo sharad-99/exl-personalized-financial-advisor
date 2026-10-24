@@ -32,7 +32,7 @@ export default function HistoryPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Recommendation history" subtitle="Every recommendation is stored with the evidence used at the time, so past advice stays explainable." />
-      <div role="tablist" aria-label="Filter by status" className="flex flex-wrap gap-1 border-b border-line">
+      <div role="tablist" aria-label="Filter by status" className="flex flex-wrap gap-1 border-b border-outline">
         {TABS.map((t, i) => (
           <button
             key={t.label}
@@ -43,7 +43,7 @@ export default function HistoryPage() {
               setTab(i);
               setPage(1);
             }}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${tab === i ? "border-teal text-teal-ink" : "border-transparent text-ink-2 hover:text-ink"}`}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${tab === i ? "border-primary text-primary-ink" : "border-transparent text-ink-muted hover:text-ink"}`}
           >
             {t.label}
           </button>
@@ -58,7 +58,7 @@ export default function HistoryPage() {
         ))}
       </div>
       {list.data && list.data.meta.total_pages > 1 && (
-        <div className="flex items-center justify-between text-sm text-ink-2">
+        <div className="flex items-center justify-between text-sm text-ink-muted">
           <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
           <span>Page {list.data.meta.page} of {list.data.meta.total_pages}</span>
           <Button variant="secondary" disabled={page >= list.data.meta.total_pages} onClick={() => setPage((p) => p + 1)}>Next</Button>

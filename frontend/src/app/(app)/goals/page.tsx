@@ -56,31 +56,31 @@ export default function GoalsPage() {
               <div className="flex items-center gap-2">
                 {plan && <Badge tone={PLAN_TONE[plan.plan_status]}>{humanize(plan.plan_status)}</Badge>}
                 {!readOnly && (
-                  <button type="button" onClick={() => setEditing(goal)} aria-label={`Edit ${goal.name}`} className="rounded-md p-1 text-ink-3 hover:bg-slate-100">
+                  <button type="button" onClick={() => setEditing(goal)} aria-label={`Edit ${goal.name}`} className="rounded-md p-1 text-ink-muted hover:bg-surface-soft">
                     <Pencil className="size-4" />
                   </button>
                 )}
               </div>
             }
           >
-            <p className="text-xs text-ink-3">{humanize(goal.goal_type)} · Priority {goal.priority}</p>
+            <p className="text-xs text-ink-muted">{humanize(goal.goal_type)} · Priority {goal.priority}</p>
             <div className="mt-3">
               <ProgressBar value={plan ? Number(plan.progress_pct) : 0} label={`${goal.name} progress`} />
             </div>
             <p className="mt-2 text-sm tabular-nums">
-              <span className="font-semibold">{formatMoney(goal.saved_amount)}</span> <span className="text-ink-2">of {formatMoney(goal.target_amount)}</span>
+              <span className="font-semibold">{formatMoney(goal.saved_amount)}</span> <span className="text-ink-muted">of {formatMoney(goal.target_amount)}</span>
             </p>
             <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-              <div><dt className="text-xs text-ink-3">Target date</dt><dd>{formatDate(goal.target_date)}</dd></div>
-              <div><dt className="text-xs text-ink-3">Planned / month</dt><dd className="tabular-nums">{formatMoney(goal.monthly_contribution)}</dd></div>
-              <div><dt className="text-xs text-ink-3">Needed / month</dt><dd className="tabular-nums">{formatMoney(plan?.required_monthly)}</dd></div>
-              <div><dt className="text-xs text-ink-3">Months left</dt><dd>{plan?.months_remaining ?? "—"}</dd></div>
+              <div><dt className="text-xs text-ink-muted">Target date</dt><dd>{formatDate(goal.target_date)}</dd></div>
+              <div><dt className="text-xs text-ink-muted">Planned / month</dt><dd className="tabular-nums">{formatMoney(goal.monthly_contribution)}</dd></div>
+              <div><dt className="text-xs text-ink-muted">Needed / month</dt><dd className="tabular-nums">{formatMoney(plan?.required_monthly)}</dd></div>
+              <div><dt className="text-xs text-ink-muted">Months left</dt><dd>{plan?.months_remaining ?? "—"}</dd></div>
             </dl>
             {plan && (
-              <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-ink-2">
+              <div className="mt-3 rounded-sm bg-surface-soft/60 p-3 text-sm text-ink-muted">
                 <p>{plan.guidance}</p>
                 <details className="mt-1 text-xs">
-                  <summary className="cursor-pointer text-ink-3">Calculation and assumptions</summary>
+                  <summary className="cursor-pointer text-ink-muted">Calculation and assumptions</summary>
                   <ul className="mt-1 space-y-0.5 font-mono">
                     {Object.entries(plan.calculation).map(([k, v]) => (
                       <li key={k}>{humanize(k)}: {v}</li>

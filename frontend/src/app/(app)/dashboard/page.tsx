@@ -35,9 +35,9 @@ export default function DashboardPage() {
         action={
           <div className="flex items-center gap-3">
             <SyntheticTag />
-            <div role="group" aria-label="Analysis period" className="inline-flex rounded-lg border border-line bg-white p-0.5">
+            <div role="group" aria-label="Analysis period" className="inline-flex rounded-sm border border-outline bg-surface-elevated p-0.5">
               {PERIODS.map((m) => (
-                <button key={m} type="button" aria-pressed={months === m} onClick={() => setMonths(m)} className={`rounded-md px-3 py-1 text-sm ${months === m ? "bg-navy text-white" : "text-ink-2 hover:bg-slate-50"}`}>
+                <button key={m} type="button" aria-pressed={months === m} onClick={() => setMonths(m)} className={`rounded-md px-3 py-1 text-sm ${months === m ? "bg-primary-ink text-white" : "text-ink-muted hover:bg-surface-soft/60"}`}>
                   {m}M
                 </button>
               ))}
@@ -65,19 +65,19 @@ export default function DashboardPage() {
             </Card>
             <Card title="Emergency fund">
               {a.emergency_fund.status === "unknown" ? (
-                <p className="text-sm text-ink-2">{a.emergency_fund.reason}</p>
+                <p className="text-sm text-ink-muted">{a.emergency_fund.reason}</p>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-3xl font-semibold tabular-nums">{a.emergency_fund.coverage_months} <span className="text-base font-normal text-ink-2">months covered</span></p>
-                  <p className="text-sm text-ink-2">Target: {a.emergency_fund.target_months} months of essential expenses ({formatMoney(a.emergency_fund.target_amount)})</p>
-                  <p className="text-sm text-ink-2">Liquid balance (reported): {formatMoney(a.emergency_fund.liquid_balance)}</p>
-                  {a.emergency_fund.gap_amount && Number(a.emergency_fund.gap_amount) > 0 && <p className="text-sm font-medium text-warn">Gap: {formatMoney(a.emergency_fund.gap_amount)}</p>}
+                  <p className="text-3xl font-semibold tabular-nums">{a.emergency_fund.coverage_months} <span className="text-base font-normal text-ink-muted">months covered</span></p>
+                  <p className="text-sm text-ink-muted">Target: {a.emergency_fund.target_months} months of essential expenses ({formatMoney(a.emergency_fund.target_amount)})</p>
+                  <p className="text-sm text-ink-muted">Liquid balance (reported): {formatMoney(a.emergency_fund.liquid_balance)}</p>
+                  {a.emergency_fund.gap_amount && Number(a.emergency_fund.gap_amount) > 0 && <p className="text-sm font-medium text-warning-ink">Gap: {formatMoney(a.emergency_fund.gap_amount)}</p>}
                 </div>
               )}
-              <div className="mt-4 border-t border-line pt-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">Estimated monthly capacity</p>
+              <div className="mt-4 border-t border-outline pt-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Estimated monthly capacity</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums">{formatMoney(a.savings_capacity.estimated_monthly_capacity)}</p>
-                <p className="text-xs text-ink-3">{a.savings_capacity.reason ?? "After essential spending and a provision for non-monthly obligations. An estimate, not guaranteed."}</p>
+                <p className="text-xs text-ink-muted">{a.savings_capacity.reason ?? "After essential spending and a provision for non-monthly obligations. An estimate, not guaranteed."}</p>
               </div>
             </Card>
           </div>
@@ -86,14 +86,14 @@ export default function DashboardPage() {
             <Card title="Where the money went" className="lg:col-span-2">
               {a.spending_by_category.length ? <CategoryChart categories={a.spending_by_category} /> : <EmptyState title="No spending in this period" />}
             </Card>
-            <Card title="Goal progress" action={<Link href="/goals" className="text-sm text-teal-ink hover:underline">Manage</Link>}>
-              {a.goals.length ? <GoalProgressList goals={a.goals} /> : <EmptyState title="No goals yet" action={<Link href="/goals" className="text-sm text-teal-ink hover:underline">Create a goal</Link>} />}
+            <Card title="Goal progress" action={<Link href="/goals" className="text-sm text-primary-ink hover:underline">Manage</Link>}>
+              {a.goals.length ? <GoalProgressList goals={a.goals} /> : <EmptyState title="No goals yet" action={<Link href="/goals" className="text-sm text-primary-ink hover:underline">Create a goal</Link>} />}
             </Card>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <Card title="Top recommendations" className="lg:col-span-2" action={<Link href="/insights" className="text-sm text-teal-ink hover:underline">Open money coach</Link>}>
-              {recs.loading && <p className="text-sm text-ink-3">Loading…</p>}
+            <Card title="Top recommendations" className="lg:col-span-2" action={<Link href="/insights" className="text-sm text-primary-ink hover:underline">Open money coach</Link>}>
+              {recs.loading && <p className="text-sm text-ink-muted">Loading…</p>}
               {recs.error && <ErrorState error={recs.error} onRetry={recs.reload} />}
               {recs.data && recs.data.items.length === 0 && <EmptyState title="No open recommendations">Nothing needs your attention right now.</EmptyState>}
               <div className="space-y-3">
@@ -104,14 +104,14 @@ export default function DashboardPage() {
             </Card>
             <Card title="Upcoming in the next 30 days">
               {a.upcoming_obligations.items.length === 0 ? (
-                <p className="text-sm text-ink-2">No known obligations due.</p>
+                <p className="text-sm text-ink-muted">No known obligations due.</p>
               ) : (
-                <ul className="divide-y divide-line text-sm">
+                <ul className="divide-y divide-outline text-sm">
                   {a.upcoming_obligations.items.map((o) => (
                     <li key={o.obligation_id} className="flex justify-between gap-2 py-2">
                       <span>
                         {o.name}
-                        <span className="block text-xs text-ink-3">{formatDate(o.due_date)} · {humanize(o.frequency)}</span>
+                        <span className="block text-xs text-ink-muted">{formatDate(o.due_date)} · {humanize(o.frequency)}</span>
                       </span>
                       <span className="tabular-nums">{formatMoney(o.amount)}</span>
                     </li>
@@ -124,7 +124,7 @@ export default function DashboardPage() {
               )}
             </Card>
           </div>
-          <p className="text-xs text-ink-3">{a.totals.note} Internal transfers ({formatMoney(a.totals.excluded_internal_transfers)}) and probable duplicates ({formatMoney(a.totals.excluded_duplicates)}) are excluded from totals.</p>
+          <p className="text-xs text-ink-muted">{a.totals.note} Internal transfers ({formatMoney(a.totals.excluded_internal_transfers)}) and probable duplicates ({formatMoney(a.totals.excluded_duplicates)}) are excluded from totals.</p>
         </>
       )}
     </div>

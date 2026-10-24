@@ -7,7 +7,7 @@ export function DataQualityPanel({ dq, compact = false }: { dq: Analytics["data_
   const warnings = dq.issues.filter((i) => i.severity !== "info");
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-ink-3">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
         <FreshnessBadge freshness={dq.freshness} days={dq.days_since_last_transaction} />
         <ConfidenceBadge level={dq.confidence} />
         <span>Latest transaction {formatDate(dq.latest_transaction_date)} · {dq.history_months} complete months of history</span>
